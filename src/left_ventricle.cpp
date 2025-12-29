@@ -283,12 +283,12 @@ void LV::compute_rhs() {
                   for (unsigned int b = 0; b < dim; ++b)
                     for (unsigned int c = 0; c < dim; ++c)
                       for (unsigned int d = 0; d < dim; ++d)
-                        dP[a][b] += dP_dF[a][b][c][d] * grad_phi_j[c][d];
+                        dP[a][b] += dP_dF[a][b][c][d] * grad_phi_i[c][d];
 
 
                 //newton jacobian assembly
                 cell_matrix(i, j) +=
-                    scalar_product(dP, grad_phi_i) * fe_values.JxW(q);
+                    scalar_product(dP, grad_phi_j) * fe_values.JxW(q);
               }
             }
           }
@@ -307,28 +307,26 @@ void LV::compute_rhs() {
 
                  for (unsigned int q = 0; q < n_q_face; ++q) {
                    {
-                     Tensor<2, dim> grad_u_face = solution_gradient_loc_face[q];
+                     
+                     Tensor<2, dim> Fh;
 
-                     Tensor<2, dim> Fh = unit_symmetric_tensor<dim>();
-          
-                                Fh += grad_u_face;
-
+                     Fh.clear();
+                     for (unsigned int d = 0; d < dim; ++d)
+                       Fh[d][d] = 1.0;
+                     Fh += solution_gradient_loc_face[q];
+                        
                      const double det_Fh = determinant(Fh);
                      AssertThrow(std::isfinite(det_Fh) && det_Fh > 0.0,
                            ExcMessage(
-                             "Non-positive or NaN det(Fh) on boundary face; cannot invert Fh."));
+                             "Non-positive or NaN det(Fh) on boundary face -> cannot invert Fh"));
 
                      Tensor<2, dim> H = det_Fh * transpose(invert(Fh));
 
                      for (unsigned int i = 0; i < dofs_per_cell; ++i) {
                        const Tensor<1, dim> term1 =
                            H * fe_face_values.normal_vector(q);
-                       const unsigned int component_i =
-                           fs->system_to_component_index(i).first;
-                       const double phi_value = fe_face_values.shape_value(i, q);
-
-                       cell_rhs(i) += term1[component_i] * phi_value *
-                                      fe_face_values.JxW(q);
+                        const Tensor<1, dim> phi_i = fe_face_values[vec_index].value(i, q);
+                    cell_rhs(i) += scalar_product(term1, phi_i) * fe_face_values.JxW(q); //todo manca un * pressure, con quello non converge
                      }
                    }
                  }
@@ -337,7 +335,7 @@ void LV::compute_rhs() {
                // ROBIN TERM
                
                
-               if (cell->face(f)->at_boundary() && cell->face(f)->boundary_id()== 4) //changed robin bcs id
+               if (cell->face(f)->at_boundary() && cell->face(f)->boundary_id()== 4) //changed robin  id
                {
                 
                fe_face_values.reinit(cell,f);
@@ -352,7 +350,7 @@ void LV::compute_rhs() {
                                         fe_face_values.JxW(q);
                                       }
                                       
-                                      for (unsigned int i=0;i<dofs_per_cell;++i){
+                for (unsigned int i=0;i<dofs_per_cell;++i){
                    for (unsigned int j=0;j<dofs_per_cell;++j){
                      cell_matrix(i,j)+= pressure*alpha*fe_face_values.shape_value(i,q)*
                      fe_face_values.shape_value(j,q)*
