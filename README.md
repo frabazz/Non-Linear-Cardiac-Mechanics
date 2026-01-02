@@ -5,7 +5,7 @@ Finite-element nonlinear cardiac mechanics implementation.
 ## What this repo contains
 
 - A parallel deal.II code that solves a nonlinear equilibrium problem using a Newton method with backtracking line search.
-- A vector-valued displacement unknown $u \in \mathbb{R}^3$ (3D).
+- A vector-valued displacement unknown $u \in \mathbb{R}^3$.
 - A hyperelastic material implemented via automatic differentiation (AD): energy density $W(F)$, with
 	- first Piola–Kirchhoff stress $P = \partial W/\partial F$
 	- consistent tangent $\mathrm{d}P/\mathrm{d}F$ (for Newton)
