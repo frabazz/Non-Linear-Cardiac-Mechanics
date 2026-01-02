@@ -113,27 +113,4 @@ Current conventions used in assembly:
 
 - Newton iterations assemble residual/Jacobian each step.
 - A backtracking line search is used to avoid invalid states (all 0 residuals and nans)
-
-## Doubts and Questions
-- *Unexpected asymmetry with the isotropic Neo- Hooke model*: the displacement magnitude is not symmetric, even though the Neo-Hookean material is isotropic.
-	- Could the asymmetry come from mesh quality/local refinement, element orientation, or partitioning/output artifacts?
-	- Is the problem symmetric (geometry, boundary IDs/BCs, applied loads/tractions)?
-	- If the problem is symmetric, is it actually converging?
-
-<table>
-	<tr>
-		<td width="50%"><img src="image.png" alt="image" /></td>
-		<td width="50%"><img src="image-1.png" alt="image" /></td>
-	</tr>
-</table>
-
-- *Units & scaling (consistency checks)*: how can we verify that geometry, material parameters ($\mu,\kappa$). We didn't find any sources online using the Neo-Hooke implementation.
-
-- *Stability and convergence*: How should we study the stability of the solution?
-
-
-- *Neo-Hookean variant (not unique)*: 
-    We used the following neo Hooke Implementation (isochoric–volumetric split energy). We don't know if it is correct
-
-
-- *Newton robustness / Jacobian correctness*: how can we confirm that the assembled Jacobian is consistent with the residual? (probably implementing AD to solve the jacobian would solve this problem)
+implementation.
