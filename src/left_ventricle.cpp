@@ -32,11 +32,10 @@ void LV::setup() {
     std::ifstream grid_in_file(mesh_file_name);
     AssertThrow(grid_in_file.good(),
           ExcMessage("Could not open mesh file: '" + mesh_file_name +
-                 "'. Current working directory is '" +
-                 std::filesystem::current_path().string() + "'."));
+                 "'. Current working directory is '" + std::filesystem::current_path().string()));
     grid_in.read_msh(grid_in_file);
 
-    GridTools::partition_triangulation(mpi_size, mesh_serial);
+    GridTools::partition_triangulation(mpi_size, mesh_serial); 
     const auto construction_data = TriangulationDescription::Utilities::
         create_description_from_triangulation(mesh_serial, MPI_COMM_WORLD);
     mesh.create_triangulation(construction_data);
@@ -61,7 +60,7 @@ void LV::setup() {
 
       pcout << "  Boundary ids present (local face counts):";
       if (boundary_face_counts.empty())
-        pcout << " <none>";
+        pcout << " ohoh";
       for (const auto &[bid, cnt] : boundary_face_counts)
         pcout << " id=" << static_cast<unsigned int>(bid) << ":" << cnt;
       pcout << std::endl;
@@ -146,10 +145,10 @@ void LV::assemble_system() {
 
 // Assemble residual R(u) and Jacobian J(u) = dR/du for the current solution vector.
   compute_rhs();
-  //quite confident the jacobian is not 100% correctly assembled, but it still converges (quasi-newton)
+  //quite confident the jacobian is not 100% correctly assembled, but it still converges
 
 
-// assemble each rank's contributions to the global system
+// assemble each rank's contributions to the global system 
 jacobian_matrix.compress(VectorOperation::add);
 system_rhs.compress(VectorOperation::add);
 
@@ -166,7 +165,7 @@ system_rhs.compress(VectorOperation::add);
                                               boundary_values);
 
      MatrixTools::apply_boundary_values(
-       boundary_values, jacobian_matrix, delta_owned, system_rhs, false); //false migliore in newton
+       boundary_values, jacobian_matrix, delta_owned, system_rhs, false); //false needed for newton
 
 
 }
@@ -202,7 +201,7 @@ void LV::compute_rhs() {
   system_rhs = 0.0;
 
 
-    std::vector<double> solution_loc_face(n_q_face);
+  std::vector<Tensor<1, dim>> solution_values_face(n_q_face);
     std::vector<Tensor<2, dim>> solution_gradient_loc_face(n_q_face);
     std::vector<Tensor<2, dim>> solution_gradient_loc(n_q);
     //those vectors will hold the gradient of the current solution at quadrature points
@@ -340,22 +339,24 @@ void LV::compute_rhs() {
                 
                fe_face_values.reinit(cell,f);
        
-                 fe_face_values.get_function_values(solution, solution_loc_face);
+                 fe_face_values[vec_index].get_function_values(solution, solution_values_face);
                  
                  for (unsigned int q=0; q<n_q_face;++q){
+                 const Tensor<1, dim> u_q = solution_values_face[q];
        
                  for (unsigned int i=0;i<dofs_per_cell;++i){
-                   cell_rhs(i) += pressure*alpha * solution_loc_face[q] *
-                   fe_face_values.shape_value(i, q) *
-                                        fe_face_values.JxW(q);
-                                      }
+                   const Tensor<1, dim> phi_i = fe_face_values[vec_index].value(i, q);
+                   cell_rhs(i) += pressure * alpha * scalar_product(u_q, phi_i) *
+                                  fe_face_values.JxW(q);
+                 }
                                       
                 for (unsigned int i=0;i<dofs_per_cell;++i){
                    for (unsigned int j=0;j<dofs_per_cell;++j){
-                     cell_matrix(i,j)+= pressure*alpha*fe_face_values.shape_value(i,q)*
-                     fe_face_values.shape_value(j,q)*
-                     fe_face_values.JxW(q);
-                                         }
+                     const Tensor<1, dim> phi_i = fe_face_values[vec_index].value(i, q);
+                     const Tensor<1, dim> phi_j = fe_face_values[vec_index].value(j, q);
+                     cell_matrix(i,j) += pressure * alpha * scalar_product(phi_i, phi_j) *
+                                         fe_face_values.JxW(q);
+                   }
                                        }
                    }
                   }                

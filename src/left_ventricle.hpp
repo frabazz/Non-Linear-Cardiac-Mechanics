@@ -44,29 +44,27 @@
 
 using namespace dealii;
 
-/**
- * Class managing the differential problem.
- */
+
+// Class managing the differential problem.
+ 
 class LV {
 public:
   // Physical dimension (1D, 2D, 3D)
   static constexpr unsigned int dim = 3;
-  double compute_pressure(const Point<dim> &) const;
+  double compute_pressure(const Point<dim> &) const; //todo it will be interesting to compute pressure not as a constant but this should be done as a ultimate change
 
-  // Self-convergence: compute ||u_this - u_reference|| in the chosen norm
-  // on this mesh.
+  // Self-convergence: compute ||u_this - u_reference|| in the chosen norm on this mesh.
   double compute_difference(const LV &,
                             const VectorTools::NormType norm) const;
 
 
-  static void run_convergence_study(const std::vector<std::string> &mesh_files,
+  static void run_convergence_study(const std::vector<std::string> &mesh_files, //todo check if this convergence study works, I don't Remember
                                     const unsigned int r,
                                     const std::string &csv_filename =
                                       "convergence.csv");
 
   // Forcing term.
-  class ForcingTerm : public Function<dim>   
-  {
+  class ForcingTerm : public Function<dim>{
   public:
     // Constructor.
     ForcingTerm() {}
@@ -78,8 +76,8 @@ public:
     // Constructor.
     FunctionG() : Function<dim>(dim) {}
 
-    // Evaluation.
-    virtual double value(const Point<dim> & /*p*/,
+    // Evaluation of the boundary condition which in our setting is always going to be 0  (todo check if this is an overly semplification, I don't think it is)
+    virtual double value(const Point<dim> & /*p*/, 
                          const unsigned int /*component*/ = 0) const override {
       return 0.0;
     }
