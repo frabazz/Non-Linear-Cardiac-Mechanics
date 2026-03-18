@@ -296,7 +296,7 @@ void LV::compute_rhs() {
           }
 
           //quite unsure of these boundary terms, they were applied in the guccione example
-          double pressure = 1.0; //105.0; //in mmhg //tried changing this, it is not the reason why the program doesn't converge 
+          double pressure = 1.0; //105.0; //in mmhg //d'ore not converge with correct pressure
           double alpha = 3.75;
 
            if (cell->at_boundary()) {
