@@ -57,13 +57,13 @@ Mesh.CharacteristicLengthMin = ms;
 Mesh.CharacteristicLengthMax = ms;
 
 // Base (Dirichlet, boundary_id=2) -> ROSSO
-Color Red { Surface{ 2 }; }
+Color Red { Physical Surface{ 2 }; }
 
 // Endocardio (Neumann, boundary_id=3) -> VERDE
-Color Green { Surface{ 3 }; }
+Color Green { Physical Surface{ 3 }; }
 
 // Epicardio (Robin, boundary_id=4) -> VIOLA
-Color Purple { Surface{ 1 }; }
+Color Purple { Physical Surface{ 4 }; }
 
 // Volume -> Giallo
 Color Yellow { Volume{ v_wall }; }

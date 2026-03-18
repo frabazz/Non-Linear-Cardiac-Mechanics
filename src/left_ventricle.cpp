@@ -189,7 +189,7 @@ void LV::compute_rhs() {
 
   FEFaceValues<dim> fe_face_values(*fs, *quadrature_face,
                                    update_values | update_normal_vectors |
-                                       update_JxW_values | update_gradients | update_quadrature_points);
+                                       update_JxW_values | update_gradients | update_quadrature_points | update_hessians);
 
   FullMatrix<double> cell_matrix(dofs_per_cell, dofs_per_cell);
   Vector<double> cell_rhs(dofs_per_cell);
@@ -346,18 +346,18 @@ void LV::compute_rhs() {
        
                  for (unsigned int i=0;i<dofs_per_cell;++i){
                    const Tensor<1, dim> phi_i = fe_face_values[vec_index].value(i, q);
-                   cell_rhs(i) += pressure * alpha * scalar_product(u_q, phi_i) *
-                                  fe_face_values.JxW(q);
+                   cell_rhs(i) += alpha * scalar_product(u_q, phi_i) * 
+                   fe_face_values.JxW(q);
                  }
                                       
                 for (unsigned int i=0;i<dofs_per_cell;++i){
                    for (unsigned int j=0;j<dofs_per_cell;++j){
                      const Tensor<1, dim> phi_i = fe_face_values[vec_index].value(i, q);
                      const Tensor<1, dim> phi_j = fe_face_values[vec_index].value(j, q);
-                     cell_matrix(i,j) += pressure * alpha * scalar_product(phi_i, phi_j) *
+                     cell_matrix(i,j) += alpha * scalar_product(phi_i, phi_j) * // I don't think this pressure term should be there
                                          fe_face_values.JxW(q);
-                   }
-                                       }
+                                        }
+                                }
                    }
                   }                
                 }
@@ -421,8 +421,7 @@ LV::line_search(const TrilinosWrappers::MPI::Vector &solution_prev,
   TrilinosWrappers::MPI::Vector last_good_trial = solution_prev;
   double alpha_last_good = 0.0;
 
-  for (unsigned int linesearch_iter = 0; linesearch_iter < max_backtracks;
-       ++linesearch_iter) {
+  for (unsigned int linesearch_iter = 0; linesearch_iter < max_backtracks;++linesearch_iter) {
     TrilinosWrappers::MPI::Vector trial = solution_prev;
     trial.add(-alpha_ls, delta_prev);
 
@@ -498,7 +497,7 @@ LV::line_search(const TrilinosWrappers::MPI::Vector &solution_prev,
 //solve the non linear system with newton's method + line search
 void LV::solve_newton() {
   const unsigned int n_max_iters = 1000;
-  const double residual_tolerance = 1e-5;
+  const double residual_tolerance = 1e-3; // was 1e-5 but convergence is too slow
 
   unsigned int n_iter = 0;
   double residual_norm = residual_tolerance + 1;
