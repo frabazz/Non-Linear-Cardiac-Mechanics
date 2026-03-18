@@ -60,7 +60,7 @@ void LV::setup() {
 
       pcout << "  Boundary ids present (local face counts):";
       if (boundary_face_counts.empty())
-        pcout << " ohoh";
+        pcout << " boundary ids not found or not at boundary, problem!";
       for (const auto &[bid, cnt] : boundary_face_counts)
         pcout << " id=" << static_cast<unsigned int>(bid) << ":" << cnt;
       pcout << std::endl;
@@ -145,7 +145,6 @@ void LV::assemble_system() {
 
 // Assemble residual R(u) and Jacobian J(u) = dR/du for the current solution vector.
   compute_rhs();
-  //quite confident the jacobian is not 100% correctly assembled, but it still converges
 
 
 // assemble each rank's contributions to the global system 
@@ -189,7 +188,7 @@ void LV::compute_rhs() {
 
   FEFaceValues<dim> fe_face_values(*fs, *quadrature_face,
                                    update_values | update_normal_vectors |
-                                       update_JxW_values | update_gradients | update_quadrature_points | update_hessians);
+                                       update_JxW_values | update_gradients | update_quadrature_points);
 
   FullMatrix<double> cell_matrix(dofs_per_cell, dofs_per_cell);
   Vector<double> cell_rhs(dofs_per_cell);
@@ -254,6 +253,10 @@ void LV::compute_rhs() {
               for (unsigned int jj = 0; jj < dim; ++jj)
                 F_d[ii][jj] = Sacado::ScalarValue<VecADNumberType>::eval(F[ii][jj]);
 
+            const double det_F = determinant(F_d);
+            AssertThrow(std::isfinite(det_F) && det_F > 1e-12,
+                        ExcMessage("Non-positive or near-singular det(F) in volume quadrature"));
+
             Tensor<2, dim> P;
             Tensor<4, dim> dP_dF;
 
@@ -293,7 +296,7 @@ void LV::compute_rhs() {
           }
 
           //quite unsure of these boundary terms, they were applied in the guccione example
-          double pressure = 105.0; //in mmhg
+          double pressure = 1.0; //105.0; //in mmhg //tried changing this, it is not the reason why the program doesn't converge 
           double alpha = 3.75;
 
            if (cell->at_boundary()) {
@@ -303,6 +306,11 @@ void LV::compute_rhs() {
                  fe_face_values.reinit(cell, f);
                  fe_face_values[vec_index].get_function_gradients(
                      solution, solution_gradient_loc_face);
+
+                  Tensor<2, dim> eye= Tensor<2, dim>();
+                  for (unsigned int d = 0; d < dim; ++d)
+                    eye[d][d] = 1.0;
+
 
                  for (unsigned int q = 0; q < n_q_face; ++q) {
                    {
@@ -319,21 +327,38 @@ void LV::compute_rhs() {
                            ExcMessage(
                              "Non-positive or NaN det(Fh) on boundary face -> cannot invert Fh"));
 
-                     Tensor<2, dim> H = det_Fh * transpose(invert(Fh));
+                    Tensor<2, dim> aux_F = transpose(invert(Fh));
+                     Tensor<2, dim> H = det_Fh * aux_F;
 
                      for (unsigned int i = 0; i < dofs_per_cell; ++i) {
                        const Tensor<1, dim> term1 =
                            H * fe_face_values.normal_vector(q);
                         const Tensor<1, dim> phi_i = fe_face_values[vec_index].value(i, q);
-                    cell_rhs(i) += scalar_product(term1, phi_i) * fe_face_values.JxW(q); //todo manca un * pressure, con quello non converge
-                     
-                  
+                    cell_rhs(i) += pressure * scalar_product(term1, phi_i) * fe_face_values.JxW(q); //todo manca un * pressure, con quello non converge
+                   
+
                       for (unsigned int j=0 ;j < dofs_per_cell; ++j){
+                        const Tensor<2,dim> grad_phi_j = fe_face_values[vec_index].gradient(j, q);
+                        const double prod = scalar_product (grad_phi_j,aux_F);
+
+                        Tensor<2,dim> term2;
+                        
+                        for (unsigned int d=0; d<dim; ++d)
+                            term2[d][d] = prod;
+
+                        const Tensor<2,dim> term3 = aux_F * transpose(grad_phi_j);
+
+                        const Tensor<2,dim> term = term2 - term3;
+
+                        const Tensor<1, dim> H_N = H * fe_face_values.normal_vector(q);
+
+                        const Tensor<1, dim> term4 = term * H_N;
+
+                          cell_matrix(i,j) += pressure * scalar_product(term4, phi_i) * fe_face_values.JxW(q);
+
 
                       }
-                  
-                  
-                  }
+                    }
                    }
                  }
                }
@@ -341,7 +366,7 @@ void LV::compute_rhs() {
                // ROBIN TERM
                
                
-               if (cell->face(f)->at_boundary() && cell->face(f)->boundary_id()== 4) //changed robin  id
+               if (cell->face(f)->at_boundary() && cell->face(f)->boundary_id()== 4) 
                {
                 
                fe_face_values.reinit(cell,f);
@@ -359,7 +384,7 @@ void LV::compute_rhs() {
                    for (unsigned int j=0;j<dofs_per_cell;++j){
                      const Tensor<1, dim> phi_i = fe_face_values[vec_index].value(i, q);
                      const Tensor<1, dim> phi_j = fe_face_values[vec_index].value(j, q);
-                     cell_matrix(i,j) += alpha * scalar_product(phi_i, phi_j) * // I don't think this pressure term should be there
+                     cell_matrix(i,j) += alpha * scalar_product(phi_i, phi_j) * 
                                          fe_face_values.JxW(q);
                                         }
                                 }
@@ -391,7 +416,7 @@ void LV::solve_linear_system() {
   delta_owned = 0.0;
   delta_owned.compress(VectorOperation::insert);   //assigning the delta_owned vector to a Trilinos vector
 
-  SolverControl solver_control(5000, 1.5e-2 * system_rhs.l2_norm());
+  SolverControl solver_control(15000, 1.5e-2 * system_rhs.l2_norm());
 
   SolverGMRES<TrilinosWrappers::MPI::Vector> solver(solver_control);
   TrilinosWrappers::PreconditionAMG preconditioner;
