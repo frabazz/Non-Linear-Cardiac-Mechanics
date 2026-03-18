@@ -326,7 +326,14 @@ void LV::compute_rhs() {
                            H * fe_face_values.normal_vector(q);
                         const Tensor<1, dim> phi_i = fe_face_values[vec_index].value(i, q);
                     cell_rhs(i) += scalar_product(term1, phi_i) * fe_face_values.JxW(q); //todo manca un * pressure, con quello non converge
-                     }
+                     
+                  
+                      for (unsigned int j=0 ;j < dofs_per_cell; ++j){
+
+                      }
+                  
+                  
+                  }
                    }
                  }
                }
@@ -348,9 +355,7 @@ void LV::compute_rhs() {
                    const Tensor<1, dim> phi_i = fe_face_values[vec_index].value(i, q);
                    cell_rhs(i) += alpha * scalar_product(u_q, phi_i) * 
                    fe_face_values.JxW(q);
-                 }
-                                      
-                for (unsigned int i=0;i<dofs_per_cell;++i){
+                  // removed a reduntatnt for loop, iterated two times over i
                    for (unsigned int j=0;j<dofs_per_cell;++j){
                      const Tensor<1, dim> phi_i = fe_face_values[vec_index].value(i, q);
                      const Tensor<1, dim> phi_j = fe_face_values[vec_index].value(j, q);
