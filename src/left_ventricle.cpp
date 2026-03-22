@@ -15,6 +15,7 @@
 #include <deal.II/base/convergence_table.h>
 
 void LV::setup() {
+  last_iteration = 0;
   pcout << "===============================================" << std::endl;
 
   // Create the mesh.
@@ -170,9 +171,9 @@ system_rhs.compress(VectorOperation::add);
 }
 
 void LV::compute_rhs() {
-  pcout << "===============================================" << std::endl;
+  //pcout << "===============================================" << std::endl;
 
-  pcout << "  Computing Right Hand Side" << std::endl;
+  //pcout << "  Computing Right Hand Side" << std::endl;
 
   const unsigned int dofs_per_cell = fs->dofs_per_cell;
   const unsigned int n_q = quadrature->size();
@@ -296,7 +297,7 @@ void LV::compute_rhs() {
           }
 
           //quite unsure of these boundary terms, they were applied in the guccione example
-          double pressure = 1.0; //105.0; //in mmhg //d'ore not converge with correct pressure
+          //105.0; //in mmhg //d'ore not converge with correct pressure 
           double alpha = 3.75;
 
            if (cell->at_boundary()) {
@@ -416,7 +417,7 @@ void LV::solve_linear_system() {
   delta_owned = 0.0;
   delta_owned.compress(VectorOperation::insert);   //assigning the delta_owned vector to a Trilinos vector
 
-  SolverControl solver_control(15000, 1.5e-2 * system_rhs.l2_norm());
+  SolverControl solver_control(15000, 1.5e-4 * system_rhs.l2_norm());
 
   SolverGMRES<TrilinosWrappers::MPI::Vector> solver(solver_control);
   TrilinosWrappers::PreconditionAMG preconditioner;
@@ -424,6 +425,7 @@ void LV::solve_linear_system() {
       jacobian_matrix, TrilinosWrappers::PreconditionAMG::AdditionalData(1.0));
 
   solver.solve(jacobian_matrix, delta_owned, system_rhs, preconditioner);
+  last_iteration = solver_control.last_step();
   pcout << "  " << solver_control.last_step() << " GMRES iterations "
       << "(final residual " << std::scientific << std::setprecision(3)
       << solver_control.last_value() << ")" << std::endl;
@@ -485,8 +487,8 @@ LV::line_search(const TrilinosWrappers::MPI::Vector &solution_prev,
     if (std::isfinite(residual_trial) &&
         (residual_trial < residual_prev * (1.0 - rel_decrease_eps) ||
          residual_trial < residual_prev - abs_decrease_eps)) {
-      pcout << "  (alpha=" << std::scientific << std::setprecision(2) << alpha_ls
-            << ")" << std::endl;
+      //      pcout << "  (alpha=" << std::scientific << std::setprecision(2) << alpha_ls
+      //      << ")" << std::endl;
       return {true, false, alpha_ls, residual_trial};
     }
     alpha_ls *= 0.5;
@@ -566,7 +568,7 @@ void LV::solve_newton() {
   
 
   bool stagnated = false;
-
+  
   while (n_iter < n_max_iters && residual_norm > residual_tolerance) {
     assemble_system();
     residual_norm = system_rhs.l2_norm();
@@ -615,6 +617,25 @@ void LV::solve_newton() {
           << residual_norm << std::endl;
           
     }
+
+
+void LV::solve(){
+  double obj_pressure = 4.0;
+  double start_pressure = 1.0;
+  int num_steps = 100;
+  double base_dp = (obj_pressure - start_pressure) / (double)num_steps;
+  double dp = base_dp;
+
+  
+  pressure = start_pressure;
+  
+  for(int t = 0;t <= num_steps; ++t){
+    pcout << "setting pressure to: " << pressure <<  " dp: " << dp << std::endl;
+    
+    solve_newton();    
+    pressure += dp;
+  }
+}
 
  void
  LV::output() const //export solution to file

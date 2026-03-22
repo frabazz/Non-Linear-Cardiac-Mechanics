@@ -103,7 +103,7 @@ public:
   void solve_linear_system();
 
   void solve_newton();
-
+  void solve();
   // Output.
   void output() const;
 
@@ -123,8 +123,9 @@ protected:
   // TODO forcing term
   ForcingTerm forcing_term;
 
-
-
+  double pressure;
+  int last_iteration;
+  
   // Triangulation. The parallel::fullydistributed::Triangulation class manages
   // a triangulation that is completely distributed (i.e. each process only
   // knows about the elements it owns and its ghost elements).
@@ -171,6 +172,8 @@ protected:
 
   void compute_rhs();
 
+  
+  
   struct LineSearchResult {
     bool accepted;
     bool stagnated;
@@ -183,7 +186,7 @@ protected:
       const TrilinosWrappers::MPI::Vector &delta_prev,
       const double residual_prev);
 
-
+  
       
 /*
 tentativo di convergenza ma non ha funzionato
