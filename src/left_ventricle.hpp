@@ -105,7 +105,7 @@ public:
   void solve_newton();
   void solve();
   // Output.
-  void output() const;
+  void output(unsigned int step) const;
 
 protected:
   // Path to the mesh file.

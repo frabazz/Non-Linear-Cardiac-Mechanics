@@ -335,7 +335,7 @@ void LV::compute_rhs() {
                        const Tensor<1, dim> term1 =
                            H * fe_face_values.normal_vector(q);
                         const Tensor<1, dim> phi_i = fe_face_values[vec_index].value(i, q);
-                    cell_rhs(i) += pressure * scalar_product(term1, phi_i) * fe_face_values.JxW(q); //todo manca un * pressure, con quello non converge
+                    cell_rhs(i) += pressure * scalar_product(term1, phi_i) * fe_face_values.JxW(q);
                    
 
                       for (unsigned int j=0 ;j < dofs_per_cell; ++j){
@@ -620,25 +620,25 @@ void LV::solve_newton() {
 
 
 void LV::solve(){
-  double obj_pressure = 4.0;
+  double obj_pressure = 5.0;
   double start_pressure = 1.0;
   int num_steps = 100;
   double base_dp = (obj_pressure - start_pressure) / (double)num_steps;
   double dp = base_dp;
-
   
   pressure = start_pressure;
   
   for(int t = 0;t <= num_steps; ++t){
     pcout << "setting pressure to: " << pressure <<  " dp: " << dp << std::endl;
     
-    solve_newton();    
+    solve_newton();
+    output(t);
     pressure += dp;
   }
 }
 
- void
- LV::output() const //export solution to file
+void
+ LV::output(unsigned int step) const //export solution to file
  {
    pcout << "===============================================" <<
    std::endl;
@@ -656,7 +656,10 @@ void LV::solve(){
    solution_ghost = solution;
 
    DataOut<dim> data_out;
-   data_out.add_data_vector(dof_handler, solution_ghost, "solution");
+   
+   std::vector<std::string> solution_names(dim, "solution");
+   std::vector<DataComponentInterpretation::DataComponentInterpretation> interpretation(dim, DataComponentInterpretation::component_is_part_of_vector);
+   data_out.add_data_vector(dof_handler, solution_ghost, solution_names, interpretation);
 
    class SolutionMagnitudePostprocessor : public DataPostprocessorScalar<dim>
    {
@@ -699,7 +702,7 @@ void LV::solve(){
 
    data_out.write_vtu_with_pvtu_record("./",
                                        output_file_name,
-                                       0,
+                                       step,
                                        MPI_COMM_WORLD);
 
    pcout << "Output written to " << output_file_name << std::endl;
@@ -707,7 +710,6 @@ void LV::solve(){
    pcout << "===============================================" <<
    std::endl;
  }
-
 
 
  //trial to calculate difference between two solutions and plot them byut didn't work

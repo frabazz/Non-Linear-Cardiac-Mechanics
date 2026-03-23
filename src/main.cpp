@@ -31,7 +31,7 @@ int main(int argc, char* argv[]){
 
   model.solve(); //solve the nonlinear problem by (pseudo)Newton+line search
 
-  model.output(); //export solution displacement field
+
   
   
   return 0;

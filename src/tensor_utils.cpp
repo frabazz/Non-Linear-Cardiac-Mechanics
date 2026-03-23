@@ -57,10 +57,19 @@ typename TensorUtils::ADNumberType TensorUtils::compute_W(const Tensor<2, dim, A
       const ADNumberType J_ad = determinant(F);
       const ADTensor2 C_ad = transpose(F) * F;
       const ADNumberType I1_ad = trace(C_ad);
+
+      
       ADNumberType psi_ad =
           (mu_hook / 2.0) * (I1_ad * std::pow(J_ad, -2.0 / 3.0) - 3.0);
-      psi_ad += (k_hook / 2.0) * std::pow(J_ad - 1.0, 2.0);
+      psi_ad += (k_hook / 2.0) * std::pow(J_ad - 1.0, 2.0)
+;
 
+// //      using the isothropic formulation from the paper, pressure expressed in kPa
+//       ADNumberType psi_ad = (a_iso / (2.0 * b_iso)) * (std::exp(b_iso * (I1_ad - 3.0)) - 1.0);
+
+//       //adding this term as surrogate for orthothropic terms
+//       psi_ad += (k_hook / 2.0) * std::pow(J_ad - 1.0, 2.0);
+          
       return psi_ad;
     }
 
