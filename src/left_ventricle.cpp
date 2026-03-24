@@ -298,7 +298,7 @@ void LV::compute_rhs() {
 
           //quite unsure of these boundary terms, they were applied in the guccione example
           //105.0; //in mmhg //d'ore not converge with correct pressure 
-          double alpha = 3.75;
+          double alpha = 0.999918;
 
            if (cell->at_boundary()) {
              for (unsigned int f = 0; f < cell->n_faces(); ++f) {
@@ -620,7 +620,7 @@ void LV::solve_newton() {
 
 
 void LV::solve(){
-  double obj_pressure = 5.0;
+  double obj_pressure = 3.0;
   double start_pressure = 1.0;
   int num_steps = 100;
   double base_dp = (obj_pressure - start_pressure) / (double)num_steps;
