@@ -268,7 +268,7 @@ void LV::compute_rhs() {
 
             // P is the PK stress tensor and is calculed by differentiating a neo-Hookean strain energy W(F)
             // dP_dF is the material elasticity tensor (4th order) needed for the jacobian assembly
-            t_utils.compute_tensors(F_d, P, dP_dF); //computation through AD
+            t_utils.compute_tensors(F_d, fe_values.quadrature_point(q), P, dP_dF); //computation through AD
 
             for (unsigned int i = 0; i < dofs_per_cell; ++i) {
               const Tensor<2, dim> grad_phi_i =
@@ -620,9 +620,10 @@ void LV::solve_newton() {
 
 
 void LV::solve(){
+  //load stepping
   double obj_pressure = 3.0;
   double start_pressure = 1.0;
-  int num_steps = 100;
+  int num_steps = 20;
   double base_dp = (obj_pressure - start_pressure) / (double)num_steps;
   double dp = base_dp;
   
