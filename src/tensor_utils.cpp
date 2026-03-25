@@ -14,18 +14,17 @@ TensorUtils::TensorUtils() : ad_helper(dim * dim) {
       C_flat = FullMatrix<double>(dim * dim, dim * dim);
     }
 
-void TensorUtils::compute_tensors(Tensor<2, dim> F, const Point<dim>& p, Tensor<2, dim> &P,
-                         Tensor<4, dim> &C) {
+void TensorUtils::compute_tensors(Tensor<2, dim> F, const Point<dim>& p, Tensor<2, dim> &P, Tensor<4, dim> &C) {
 
 
    const double d = 2.91;
-   const double z_base = 1.19;
+  // const double z_base = 1.19;
 
   double x = p[0], y = p[1], z = p[2];
   
-  double r1 = std::sqrt(x*x + y*y + (z-d)*(z-d));
-  double r2 = std::sqrt(x*x + y*y + (z+d)*(z+d));
-  double cosh_xi = (r1 + r2) / (2.0 * d);
+  double r1 = std::sqrt(x*x + y*y + (z-d)*(z-d)); //distance from upper focal point (d) in z
+  double r2 = std::sqrt(x*x + y*y + (z+d)*(z+d)); //distance from lower focal point (-d) in z
+  double cosh_xi = (r1 + r2) / (2.0 * d); 
   double xi = std::acosh(std::max(1.0, cosh_xi));
 
   
@@ -46,8 +45,8 @@ void TensorUtils::compute_tensors(Tensor<2, dim> F, const Point<dim>& p, Tensor<
 
 
   
-  Tensor<1, 3> g_xi, g_theta, g_phi;
-
+  Tensor<1, 3> g_xi, g_theta, g_phi; //tangent basis vectors in prolate spheroidal coordinates
+  
   g_xi[0] = d * std::cosh(xi) * std::sin(theta) * cosphi;
   g_xi[1] = d * std::cosh(xi) * std::sin(theta) * sinphi;
   g_xi[2] = d * std::sinh(xi) * std::cos(theta);
@@ -67,8 +66,8 @@ void TensorUtils::compute_tensors(Tensor<2, dim> F, const Point<dim>& p, Tensor<
 
  
   const double numbers_PI = 3.14159265358979323846;
-  const double alpha_endo = -60.0 * numbers_PI / 180.0;  
-  const double alpha_epi  =  60.0 * numbers_PI / 180.0;  
+  const double alpha_endo =  60.0 * numbers_PI / 180.0;  
+  const double alpha_epi  = -60.0 * numbers_PI / 180.0;  
   const double xi_endo = 0.6; 
   const double xi_epi = 1.02; 
   double wall_fraction = (xi - xi_endo) / (xi_epi - xi_endo); 
