@@ -95,6 +95,7 @@ public:
   // Initialization.
   void setup();
 
+  void init_poisson();
   
   // System assembly.
   void assemble_system();
@@ -156,6 +157,11 @@ protected:
   // System solution.
   TrilinosWrappers::MPI::Vector solution;
 
+  // poisson interpolation
+  DoFHandler<dim> dof_handler_poisson;
+  TrilinosWrappers::MPI::Vector lambda_ghost;
+  TrilinosWrappers::MPI::Vector lambda;
+  
   // System solution (without ghost elements).
   TrilinosWrappers::MPI::Vector solution_owned;
 

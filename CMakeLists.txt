@@ -42,11 +42,14 @@ deal_ii_setup_target(SystemAssembler)
 add_library(TensorUtils STATIC src/tensor_utils.cpp)
 deal_ii_setup_target(TensorUtils)
 
+add_library(Poisson STATIC src/Poisson.cpp)
+deal_ii_setup_target(Poisson)
+
 add_library(LeftVentricle STATIC src/left_ventricle.cpp)
 deal_ii_setup_target(LeftVentricle)
 
 add_executable(cardiac.o src/main.cpp)
-target_link_libraries(cardiac.o LeftVentricle TensorUtils)
+target_link_libraries(cardiac.o LeftVentricle TensorUtils Poisson)
 deal_ii_setup_target(cardiac.o)
 
 
