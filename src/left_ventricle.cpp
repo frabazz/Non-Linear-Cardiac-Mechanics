@@ -621,9 +621,10 @@ void LV::solve_newton() {
 
 void LV::solve(){
   //load stepping
-  double obj_pressure = 4.0;
-  double start_pressure = 0.1;
-  int num_steps = 40;
+  // stability condition
+  double obj_pressure = 15.0;
+  double start_pressure = 1.0;
+  int num_steps = 100;
   double base_dp = (obj_pressure - start_pressure) / (double)num_steps;
   double dp = base_dp;
   
