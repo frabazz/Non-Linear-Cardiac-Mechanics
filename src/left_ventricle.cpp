@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <Sacado.hpp>
+#include <iomanip>
 #include <limits>
 #include <fstream>
 #include <memory>
@@ -619,20 +620,19 @@ void LV::solve_newton() {
     }
 
 
-void LV::solve(){
+void LV::solve(int num_steps){
   //load stepping
   // stability condition
   double obj_pressure = 15.0;
   double start_pressure = 1.0;
-  int num_steps = 100;
   double base_dp = (obj_pressure - start_pressure) / (double)num_steps;
   double dp = base_dp;
-  
+
   pressure = start_pressure;
-  
+
   for(int t = 0;t <= num_steps; ++t){
     pcout << "setting pressure to: " << pressure <<  " dp: " << dp << std::endl;
-    
+
     solve_newton();
     output(t);
     pressure += dp;
@@ -714,11 +714,16 @@ void
  }
 
 
- //trial to calculate difference between two solutions and plot them byut didn't work
- /*
+// Self-convergence: ||u_this - u_reference|| in the chosen norm, evaluated on
+// this mesh by interpolating the reference solution via FEFieldFunction.
+// Single-rank only (FEFieldFunction does not support fully distributed meshes
+// with non-matching partitions).
 double LV::compute_difference(const LV &reference,
-                              const VectorTools::NormType norm) const
+                              VectorTools::NormType norm) const
 {
+  AssertThrow(Utilities::MPI::n_mpi_processes(MPI_COMM_WORLD) == 1,
+              ExcMessage("compute_difference requires a single MPI rank "
+                         "(FEFieldFunction does not support distributed meshes)."));
 
   MappingFE<dim> mapping(*fe);
 
@@ -739,75 +744,280 @@ double LV::compute_difference(const LV &reference,
 
 double LV::h_from_mesh_filename(const std::string &mesh_file)
 {
-  // Expected pattern: ..._0_k.msh -> h = 0.k 
-  // cube_0_2.msh  -> 0.2
-  // cube_0_5.msh -> 0.5
-  const std::string token = "_0_";
-  const std::size_t pos   = mesh_file.rfind(token);
-  AssertThrow(pos != std::string::npos,
-              ExcMessage("Mesh filename does not contain '_0_': " + mesh_file));
+  const std::filesystem::path p(mesh_file);
+  const std::string stem = p.stem().string();
 
-  std::size_t i = pos + token.size();
   std::string digits;
-  while (i < mesh_file.size() && std::isdigit(static_cast<unsigned char>(mesh_file[i])))
+  for (auto it = stem.rbegin(); it != stem.rend(); ++it)
     {
-      digits.push_back(mesh_file[i]);
-      ++i;
+      if (std::isdigit(static_cast<unsigned char>(*it)))
+        digits.insert(digits.begin(), *it);
+      else if (*it == '_' && !digits.empty())
+        continue;
+      else
+        break;
     }
 
   AssertThrow(!digits.empty(),
-              ExcMessage("Mesh filename has no digits after '_0_': " + mesh_file));
+              ExcMessage("Mesh filename has no trailing digits: " + mesh_file));
+
+  std::size_t first_non_zero = digits.find_first_not_of('0');
+  if (first_non_zero == std::string::npos)
+    digits = "0";
+  else
+    digits = digits.substr(first_non_zero);
 
   return std::stod("0." + digits);
 }
 
+std::unique_ptr<LV::SerialReplica> LV::gather_to_rank0() const
+{
+  using CellPayload = std::pair<CellId, std::vector<double>>;
+  std::vector<CellPayload> local_data;
+
+  std::vector<types::global_dof_index> dof_indices(fs->dofs_per_cell);
+  for (const auto &cell : dof_handler.active_cell_iterators())
+    {
+      if (!cell->is_locally_owned())
+        continue;
+      cell->get_dof_indices(dof_indices);
+      std::vector<double> values(fs->dofs_per_cell);
+      for (unsigned int i = 0; i < fs->dofs_per_cell; ++i)
+        values[i] = solution(dof_indices[i]);
+      local_data.emplace_back(cell->id(), std::move(values));
+    }
+
+  const auto all_data =
+    Utilities::MPI::gather(MPI_COMM_WORLD, local_data, 0);
+
+  if (mpi_rank != 0)
+    return nullptr;
+
+  std::map<CellId, std::vector<double>> by_cell;
+  for (const auto &per_rank : all_data)
+    for (const auto &payload : per_rank)
+      by_cell[payload.first] = payload.second;
+
+  auto rep = std::make_unique<SerialReplica>();
+  rep->fe         = std::make_unique<FE_SimplexP<dim>>(r);
+  rep->fs         = std::make_unique<FESystem<dim>>(*rep->fe, dim);
+  rep->mapping    = std::make_unique<MappingFE<dim>>(*rep->fe);
+  rep->quadrature = std::make_unique<QGaussSimplex<dim>>(rep->fe->degree + 1);
+
+  GridIn<dim> grid_in;
+  grid_in.attach_triangulation(rep->tria);
+  std::ifstream grid_in_file(mesh_file_name);
+  AssertThrow(grid_in_file.good(),
+              ExcMessage("gather_to_rank0: could not open mesh file '" +
+                         mesh_file_name + "'"));
+  grid_in.read_msh(grid_in_file);
+
+  rep->dof_handler.reinit(rep->tria);
+  rep->dof_handler.distribute_dofs(*rep->fs);
+  rep->solution.reinit(rep->dof_handler.n_dofs());
+
+  std::vector<types::global_dof_index> serial_dof_indices(rep->fs->dofs_per_cell);
+  for (const auto &cell : rep->dof_handler.active_cell_iterators())
+    {
+      const auto it = by_cell.find(cell->id());
+      AssertThrow(it != by_cell.end(),
+                  ExcMessage("gather_to_rank0: missing cell " +
+                             cell->id().to_string()));
+      cell->get_dof_indices(serial_dof_indices);
+      for (unsigned int i = 0; i < rep->fs->dofs_per_cell; ++i)
+        rep->solution(serial_dof_indices[i]) = it->second[i];
+    }
+
+  return rep;
+}
+
+double LV::compute_difference_serial(const SerialReplica  &a,
+                                     const SerialReplica  &b,
+                                     VectorTools::NormType norm)
+{
+  AssertThrow(norm == VectorTools::L2_norm || norm == VectorTools::H1_norm,
+              ExcMessage("compute_difference_serial supports only L2 and H1 norms."));
+
+  Functions::FEFieldFunction<dim, Vector<double>> u_b(b.dof_handler,
+                                                      b.solution,
+                                                      *b.mapping);
+
+  const FEValuesExtractors::Vector vec_index(0);
+  const unsigned int n_q = a.quadrature->size();
+
+  UpdateFlags flags = update_values | update_quadrature_points | update_JxW_values;
+  if (norm == VectorTools::H1_norm)
+    flags |= update_gradients;
+
+  FEValues<dim> fe_values_a(*a.mapping, *a.fs, *a.quadrature, flags);
+
+  std::vector<Tensor<1, dim>> u_a_values(n_q);
+  std::vector<Tensor<2, dim>> u_a_grads(n_q);
+
+  double sum_l2_sq = 0.0;
+  double sum_h1_seminorm_sq = 0.0;
+  unsigned int total_qp = 0, skipped_qp = 0;
+
+  for (const auto &cell : a.dof_handler.active_cell_iterators())
+    {
+      fe_values_a.reinit(cell);
+      fe_values_a[vec_index].get_function_values(a.solution, u_a_values);
+      if (norm == VectorTools::H1_norm)
+        fe_values_a[vec_index].get_function_gradients(a.solution, u_a_grads);
+
+      for (unsigned int q = 0; q < n_q; ++q)
+        {
+          ++total_qp;
+          const Point<dim> &p = fe_values_a.quadrature_point(q);
+
+          Vector<double> u_b_val(dim);
+          std::vector<Tensor<1, dim>> u_b_grad_vec(dim);
+          bool found = true;
+
+          try
+            {
+              u_b.vector_value(p, u_b_val);
+              if (norm == VectorTools::H1_norm)
+                u_b.vector_gradient(p, u_b_grad_vec);
+            }
+          catch (const dealii::ExceptionBase &)
+            {
+              found = false;
+            }
+
+          if (!found)
+            {
+              ++skipped_qp;
+              continue;
+            }
+
+          double diff_sq = 0.0;
+          for (unsigned int d = 0; d < dim; ++d)
+            {
+              const double diff_d = u_a_values[q][d] - u_b_val[d];
+              diff_sq += diff_d * diff_d;
+            }
+          sum_l2_sq += diff_sq * fe_values_a.JxW(q);
+
+          if (norm == VectorTools::H1_norm)
+            {
+              double grad_diff_sq = 0.0;
+              for (unsigned int d = 0; d < dim; ++d)
+                for (unsigned int e = 0; e < dim; ++e)
+                  {
+                    const double g_de = u_a_grads[q][d][e] - u_b_grad_vec[d][e];
+                    grad_diff_sq += g_de * g_de;
+                  }
+              sum_h1_seminorm_sq += grad_diff_sq * fe_values_a.JxW(q);
+            }
+        }
+    }
+
+  if (skipped_qp > 0)
+    std::cout << "  [compute_difference_serial] skipped "
+              << skipped_qp << " of " << total_qp
+              << " quadrature points (boundary mismatch on curved geometry)"
+              << std::endl;
+
+  if (norm == VectorTools::L2_norm)
+    return std::sqrt(sum_l2_sq);
+  else
+    return std::sqrt(sum_l2_sq + sum_h1_seminorm_sq);
+}
+
 void LV::run_convergence_study(const std::vector<std::string> &mesh_files,
-                               const unsigned int r,
+                               unsigned int r,
                                const std::string &csv_filename)
 {
   AssertThrow(mesh_files.size() >= 2,
               ExcMessage(
                 "Need at least 2 meshes to compute self-convergence."));
 
-  std::ofstream convergence_file(csv_filename);
-  AssertThrow(convergence_file.good(),
-              ExcMessage("Could not open '" + csv_filename + "'"));
-  convergence_file << "h,diffL2,diffH1" << std::endl;
+  // Each solve runs in full MPI parallel; only the post-solve comparison is
+  // performed serially on rank 0 (using gathered SerialReplica objects).
 
-  dealii::ConvergenceTable table;
+  const unsigned int rank = Utilities::MPI::this_mpi_process(MPI_COMM_WORLD);
+  ConditionalOStream pcout(std::cout, rank == 0);
 
-  std::vector<std::unique_ptr<LV>> models;
-  models.reserve(mesh_files.size());
+  std::ofstream convergence_file;
+  if (rank == 0)
+    {
+      convergence_file.open(csv_filename);
+      AssertThrow(convergence_file.good(),
+                  ExcMessage("Could not open '" + csv_filename + "'"));
+      convergence_file << "h,diffL2,rateL2,diffH1,rateH1" << std::endl;
+    }
+
+  std::vector<std::unique_ptr<SerialReplica>> replicas;
+  if (rank == 0)
+    replicas.reserve(mesh_files.size());
 
   for (const auto &mesh_file : mesh_files)
     {
+      pcout << "Convergence study: solving on " << mesh_file
+            << " \n" << std::endl;
       auto model = std::make_unique<LV>(mesh_file, r);
-      model.setup();
-      model.solve_newton();
-      model.output();
-      models.push_back(std::move(model));
+      model->setup();
+      model->solve(25);
+      auto rep = model->gather_to_rank0();
+      if (rank == 0)
+        replicas.push_back(std::move(rep));
     }
 
-  // Compare each mesh solution against the next finer mesh.
-  for (std::size_t i = 0; i + 1 < models.size(); ++i)
+  if (rank != 0)
+    return;
+
+  std::vector<double> hs, l2s, h1s;
+  for (std::size_t i = 0; i + 1 < replicas.size(); ++i)
     {
-      const double h = LV::h_from_mesh_filename(mesh_files[i]);
-
-      const double diffL2 =
-        models[i]->compute_difference(*models[i + 1], VectorTools::L2_norm);
-      const double diffH1 =
-        models[i]->compute_difference(*models[i + 1], VectorTools::H1_norm);
-
-      table.add_value("h", h);
-      table.add_value("L2", diffL2);
-      table.add_value("H1", diffH1);
-
-      convergence_file << h << "," << diffL2 << "," << diffH1 << std::endl;
+      hs.push_back(LV::h_from_mesh_filename(mesh_files[i]));
+      l2s.push_back(compute_difference_serial(*replicas[i],
+                                              *replicas[i + 1],
+                                              VectorTools::L2_norm));
+      h1s.push_back(compute_difference_serial(*replicas[i],
+                                              *replicas[i + 1],
+                                              VectorTools::H1_norm));
     }
 
-  table.evaluate_all_convergence_rates(ConvergenceTable::reduction_rate_log2);
-  table.set_scientific("L2", true);
-  table.set_scientific("H1", true);
-  table.write_text(std::cout);
+
+  auto rate = [](double err_prev, double err_curr,
+                 double h_prev,   double h_curr) -> double
+  {
+    return std::log(err_prev / err_curr) / std::log(h_prev / h_curr);
+  };
+
+  std::cout << "\nConve table \n" << std::endl;
+  std::cout << std::left << std::setw(8) << "h"
+            << std::setw(14) << "L2"
+            << std::setw(10) << "rate_L2"
+            << std::setw(14) << "H1"
+            << std::setw(10) << "rate_H1"
+            << std::endl;
+
+  for (std::size_t i = 0; i < hs.size(); ++i)
+    {
+      double rL2 = std::numeric_limits<double>::quiet_NaN();
+      double rH1 = std::numeric_limits<double>::quiet_NaN();
+      if (i > 0)
+        {
+          rL2 = rate(l2s[i - 1], l2s[i], hs[i - 1], hs[i]);
+          rH1 = rate(h1s[i - 1], h1s[i], hs[i - 1], hs[i]);
+        }
+
+      std::cout << std::left
+                << std::fixed << std::setprecision(4) << std::setw(8) << hs[i]
+                << std::scientific << std::setprecision(4) << std::setw(14) << l2s[i];
+      if (i == 0) std::cout << std::setw(10) << "-";
+      else        std::cout << std::fixed << std::setprecision(2) << std::setw(10) << rL2;
+      std::cout << std::scientific << std::setprecision(4) << std::setw(14) << h1s[i];
+      if (i == 0) std::cout << std::setw(10) << "-";
+      else        std::cout << std::fixed << std::setprecision(2) << std::setw(10) << rH1;
+      std::cout << std::endl;
+
+      convergence_file << hs[i] << "," << l2s[i] << ","
+                       << (i == 0 ? std::string("") : std::to_string(rL2)) << ","
+                       << h1s[i] << ","
+                       << (i == 0 ? std::string("") : std::to_string(rH1))
+                       << std::endl;
+    }
 }
-*/

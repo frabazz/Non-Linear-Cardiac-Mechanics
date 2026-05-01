@@ -53,15 +53,40 @@ public:
   static constexpr unsigned int dim = 3;
   double compute_pressure(const Point<dim> &) const; //todo it will be interesting to compute pressure not as a constant but this should be done as a ultimate change
 
-  // Self-convergence: compute ||u_this - u_reference|| in the chosen norm on this mesh.
-  double compute_difference(const LV &,
-                            const VectorTools::NormType norm) const;
+  // Self-convergence: ||u_this - u_reference|| in the chosen norm.
 
+  double compute_difference(const LV &reference,
+                            VectorTools::NormType norm) const;
 
-  static void run_convergence_study(const std::vector<std::string> &mesh_files, //todo check if this convergence study works, I don't Remember
-                                    const unsigned int r,
+  // Drives a self-convergence study over a list of mesh files.
+  // Each solve runs in full MPI parallel; the post-solve comparison is done
+  // serially on rank 0 using gathered SerialReplica objects.
+  static void run_convergence_study(const std::vector<std::string> &mesh_files,
+                                    unsigned int r,
                                     const std::string &csv_filename =
                                       "convergence.csv");
+
+  // Serial in-memory copy of solver state needed by FEFieldFunction:
+  struct SerialReplica {
+    Triangulation<dim>                  tria;
+    std::unique_ptr<FiniteElement<dim>> fe;
+    std::unique_ptr<FESystem<dim>>      fs;
+    std::unique_ptr<MappingFE<dim>>     mapping;
+    std::unique_ptr<Quadrature<dim>>    quadrature;
+    DoFHandler<dim>                     dof_handler;
+    Vector<double>                      solution;
+  };
+
+  // Gather the parallel solution to rank 0 and rebuild a serial replica
+  
+  std::unique_ptr<SerialReplica> gather_to_rank0() const;
+
+  static double compute_difference_serial(const SerialReplica  &a,
+                                          const SerialReplica  &b,
+                                          VectorTools::NormType norm);
+
+  // Extract h from mesh filename 
+   static double h_from_mesh_filename(const std::string &mesh_file);
 
   // Forcing term.
   class ForcingTerm : public Function<dim>{
@@ -103,7 +128,9 @@ public:
   void solve_linear_system();
 
   void solve_newton();
-  void solve();
+
+  
+  void solve(int num_steps = 100);
   // Output.
   void output(unsigned int step) const;
 
@@ -188,10 +215,4 @@ protected:
 
   
       
-/*
-tentativo di convergenza ma non ha funzionato
-static double h_from_mesh_filename(const std::string &mesh_file);
-*/  
-
-
 };

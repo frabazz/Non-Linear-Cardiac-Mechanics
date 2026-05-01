@@ -5,9 +5,9 @@ SetFactory("OpenCASCADE"); //Necessary for doing the intern subraction
 //Ventricle geometry with fiber orientation
 
 //Mesh size
-ms = 0.5;
+ms = 0.3;
 
-//Focal length 
+//Focal length
 d = 2.91;
 xi_in = 0.6;       // inter ellipsoidale
 xi_out = 1.02;     // outer ellipsoidale
@@ -23,10 +23,10 @@ R_out_z  = d * Cosh(xi_out);
 //Create the outer ellipsoid
 v_out = newv; // Create a new volume
 Sphere(v_out) = {0, 0, 0, 1}; // Unitary sphere in the origin with tag = newv
-Dilate {{0, 0, 0}, {R_out_xy, R_out_xy, R_out_z}} { Volume{v_out}; } 
+Dilate {{0, 0, 0}, {R_out_xy, R_out_xy, R_out_z}} { Volume{v_out}; }
 
-//Create the inner ellipsoid 
-v_in = newv; 
+//Create the inner ellipsoid
+v_in = newv;
 Sphere(v_in) = {0, 0, 0, 1};
 Dilate {{0, 0, 0}, {R_in_xy, R_in_xy, R_in_z}} { Volume{v_in}; }
 
