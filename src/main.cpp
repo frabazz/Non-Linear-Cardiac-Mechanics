@@ -28,6 +28,7 @@ int main(int argc, char* argv[]){
 
   model.setup();
 
+  model.init_poisson();
 
   model.solve(); //solve the nonlinear problem by (pseudo)Newton+line search
 

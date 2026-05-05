@@ -57,15 +57,34 @@ class TensorUtils {
 public:
   TensorUtils();
 
-  void compute_tensors(Tensor<2, dim> F, Tensor<2, dim> &P, Tensor<4, dim> &C);
+  void compute_tensors(
+                       Tensor<2, dim> F,
+                       Tensor<2, dim> &P,
+                       Tensor<4, dim> &C,
+                       const Tensor<1, dim> &f0,
+                       const Tensor<1, dim> &s0,
+                       const Tensor<1, dim> &n0);
 
 private:
   ADHelper ad_helper;
   Vector<double> P_flat;
   FullMatrix<double> C_flat;
 
-  ADNumberType compute_W(const Tensor<2, dim, ADNumberType> &F) const;
+  ADNumberType compute_W(const Tensor<2, dim, ADNumberType> &F,
+                         const Tensor<1, dim> &f0,
+                         const Tensor<1, dim> &s0,
+                         const Tensor<1, dim> &n0) const;
 
-  double mu_hook = 4.0;
-  double k_hook = 2.0;
+  // double mu_hook = 4.0;
+  // double k_hook = 2.0;
+
+  double a = 0.059;
+  double b = 8.023;
+  double a_f = 18.472;
+  double b_f = 16.026;
+  double a_s = 2.481;
+  double b_s = 11.120;
+  double a_fs = 0.216;
+  double b_fs = 11.436;
+  double kappa = 500;
 };
