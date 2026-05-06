@@ -40,7 +40,7 @@
 #include <iostream>
 #include <cmath>
 
-#include "common.hpp"
+#include "../common.hpp"
 
 using namespace dealii;
 

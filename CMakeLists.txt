@@ -33,23 +33,27 @@ find_package(deal.II 9.3.1 REQUIRED
 deal_ii_initialize_cached_variables()
 
 # Add useful compiler flags.
+#file(GLOB_RECURSE SOURCE_FILES "src/*.cpp" "src/*.hpp")
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfloat-conversion -Wmissing-braces -Wnon-virtual-dtor -Wfatal-errors")
-file(GLOB_RECURSE SOURCE_FILES "src/*.cpp" "src/*.hpp")
 
 add_library(SystemAssembler STATIC src/system_assembler.cpp)
 deal_ii_setup_target(SystemAssembler)
 
-add_library(TensorUtils STATIC src/tensor_utils.cpp)
-deal_ii_setup_target(TensorUtils)
 
-add_library(Poisson STATIC src/Poisson.cpp)
+add_library(Poisson STATIC src/holzapfel/Poisson.cpp)
 deal_ii_setup_target(Poisson)
 
-add_library(LeftVentricle STATIC src/left_ventricle.cpp)
-deal_ii_setup_target(LeftVentricle)
+set(MODELS guccione holzapfel)
 
-add_executable(cardiac.o src/main.cpp)
-target_link_libraries(cardiac.o LeftVentricle TensorUtils Poisson)
-deal_ii_setup_target(cardiac.o)
+foreach(MODEL ${MODELS})
+    add_library(LeftVentricle_${MODEL} STATIC src/${MODEL}/left_ventricle.cpp)
+    deal_ii_setup_target(LeftVentricle_${MODEL})
 
-
+    add_library(TensorUtils_${MODEL} STATIC src/${MODEL}/tensor_utils.cpp)
+    deal_ii_setup_target(TensorUtils_${MODEL})
+    
+    add_executable(cardiac_${MODEL} src/${MODEL}/main.cpp)
+    target_link_libraries(cardiac_${MODEL} LeftVentricle_${MODEL} SystemAssembler TensorUtils_${MODEL} Poisson)
+    deal_ii_setup_target(cardiac_${MODEL})
+endforeach()

@@ -39,7 +39,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "common.hpp"
+#include "../common.hpp"
 
 // for reference:
 // https://dealii.org/current/doxygen/deal.II/classDifferentiation_1_1AD_1_1ScalarFunction.html
@@ -57,7 +57,6 @@ class TensorUtils {
 public:
   TensorUtils();
 
-<<<<<<<< HEAD:src/holzapfel/tensor_utils.hpp
   void compute_tensors(
                        Tensor<2, dim> F,
                        Tensor<2, dim> &P,
@@ -65,16 +64,12 @@ public:
                        const Tensor<1, dim> &f0,
                        const Tensor<1, dim> &s0,
                        const Tensor<1, dim> &n0);
-========
-  void compute_tensors(Tensor<2, dim> F, const Point<dim>& p, Tensor<2, dim> &P, Tensor<4, dim> &C);
->>>>>>>> guccione:src/guccione/tensor_utils.hpp
 
 private:
   ADHelper ad_helper;
   Vector<double> P_flat;
   FullMatrix<double> C_flat;
 
-<<<<<<<< HEAD:src/holzapfel/tensor_utils.hpp
   ADNumberType compute_W(const Tensor<2, dim, ADNumberType> &F,
                          const Tensor<1, dim> &f0,
                          const Tensor<1, dim> &s0,
@@ -92,23 +87,4 @@ private:
   double a_fs = 0.216;
   double b_fs = 11.436;
   double kappa = 500;
-========
-//  ADNumberType compute_W(const Tensor<2, dim, ADNumberType> &F) const;
-
-ADNumberType compute_W(const Tensor<2, dim, ADNumberType> &F,
-                       const Tensor<1, dim> &f,
-                       const Tensor<1, dim> &s,
-                       const Tensor<1, dim> &n) const;
-
-  double mu_hook = 4.0;
-  double k_hook = 50.0;
-
-  double b_ff = 8.0;
-  double b_ss = 2.0;
-  double b_nn = 2.0;
-  double b_fs = 4.0;
-  double b_fn = 4.0;
-  double b_sn = 2.0;
-  double C_param = 2.0;
->>>>>>>> guccione:src/guccione/tensor_utils.hpp
 };
