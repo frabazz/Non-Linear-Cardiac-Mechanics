@@ -1,6 +1,5 @@
 #include "left_ventricle.hpp"
 #include "tensor_utils.hpp"
-#include "Poisson.hpp"
 
 #include <cmath>
 #include <Sacado.hpp>
@@ -142,34 +141,6 @@ void LV::setup() {
 }
 
 
-void LV::init_poisson(){
-  dof_handler_poisson.reinit(mesh);
-  dof_handler_poisson.distribute_dofs(*fe);
-  
-  Poisson poisson(
-                  mesh,
-                  lambda,
-                  fe,
-                  quadrature,
-                  quadrature_face,
-                  pcout
-  );
-
-  
-  
-  poisson.setup();
-  poisson.assemble();
-  poisson.solve();
-  poisson.output();
-
-  IndexSet locally_owned_poisson = dof_handler_poisson.locally_owned_dofs();
-  IndexSet locally_relevant_poisson;
-  DoFTools::extract_locally_relevant_dofs(dof_handler_poisson, locally_relevant_poisson);
-
-  lambda_ghost.reinit(locally_owned_poisson, locally_relevant_poisson, MPI_COMM_WORLD);
-  lambda_ghost = lambda; 
-}
-
 //assemble residual and jacobian for the current solution
 //used in newton iteration
 void LV::assemble_system() {
@@ -215,9 +186,6 @@ void LV::compute_rhs() {
                           update_values | update_gradients |
                               update_quadrature_points | update_JxW_values);
 
-  FEValues<dim> fe_values_poisson(*fe, *quadrature, 
-                                update_values | update_gradients);
-  
   const FEValuesExtractors::Vector vec_index(0);
 
   FEFaceValues<dim> fe_face_values(*fs, *quadrature_face,
@@ -234,8 +202,6 @@ void LV::compute_rhs() {
   system_rhs = 0.0;
 
 
-  std::vector<double>         lambda_values(n_q);
-  std::vector<Tensor<1, dim>> lambda_gradients(n_q);
   std::vector<Tensor<1, dim>> solution_values_face(n_q_face);
     std::vector<Tensor<2, dim>> solution_gradient_loc_face(n_q_face);
     std::vector<Tensor<2, dim>> solution_gradient_loc(n_q);
@@ -243,21 +209,15 @@ void LV::compute_rhs() {
 
     TensorUtils t_utils; //needed to compute P and dP/dF through automatic differentiation
 
-    auto cell_poisson = dof_handler_poisson.begin_active();
-    
+
   for (const auto &cell : dof_handler.active_cell_iterators()) {
-    if (!cell->is_locally_owned()){
-      ++cell_poisson;
+    if (!cell->is_locally_owned())
       continue;
-    }
 
       //  binds FEValues to this specific cell and computes 
       //  all requested FE data at quadrature points.
     fe_values.reinit(cell);
-    fe_values_poisson.reinit(cell_poisson);
-    fe_values_poisson.get_function_values(lambda_ghost, lambda_values);
-    fe_values_poisson.get_function_gradients(lambda_ghost, lambda_gradients);
-    
+
     cell_rhs = 0.0;
     cell_matrix = 0.0;
 
@@ -275,32 +235,6 @@ void LV::compute_rhs() {
         //volume quadrature loop
           for (unsigned int q = 0; q < n_q; ++q) {
 
-            const double lam = lambda_values[q];
-
-           
-            Tensor<1, dim> e2 = lambda_gradients[q];
-            e2 /= e2.norm();
-
-           
-            Tensor<1, dim> k_axis; k_axis[2] = 1.0;
-            Tensor<1, dim> e1 = k_axis - (k_axis * e2) * e2;
-            e1 /= e1.norm();
-
-           
-            Tensor<1, dim> e0 = cross_product_3d(e1, e2);
-
-            const double alpha_endo = 60.0;
-            const double alpha_epi = -60.0;
-            const double beta_endo = -30.0;
-            const double beta_epi  =  30.0;
-            
-            const double alpha = (alpha_endo * (1.0 - lam) + alpha_epi * lam) * M_PI / 180.0;
-            const double beta  = (beta_endo  * (1.0 - lam) + beta_epi  * lam) * M_PI / 180.0;
-            Tensor<1, dim> f0 = std::cos(alpha) * e0 + std::sin(alpha) * e1;
-            Tensor<1, dim> g_hat = -std::sin(alpha) * e0 + std::cos(alpha) * e1;
-            Tensor<1, dim> s0 = std::cos(beta) * g_hat + std::sin(beta) * e2;
-            Tensor<1, dim> n0 = cross_product_3d(f0, s0);
-            
             Tensor<2, dim, VecADNumberType> F;
 
             F.clear();// sanity check;
@@ -335,11 +269,7 @@ void LV::compute_rhs() {
 
             // P is the PK stress tensor and is calculed by differentiating a neo-Hookean strain energy W(F)
             // dP_dF is the material elasticity tensor (4th order) needed for the jacobian assembly
-<<<<<<<< HEAD:src/holzapfel/left_ventricle.cpp
-            t_utils.compute_tensors(F_d, P, dP_dF, f0, s0, n0); //computation through AD
-========
             t_utils.compute_tensors(F_d, fe_values.quadrature_point(q), P, dP_dF); //computation through AD
->>>>>>>> guccione:src/guccione/left_ventricle.cpp
 
             for (unsigned int i = 0; i < dofs_per_cell; ++i) {
               const Tensor<2, dim> grad_phi_i =
@@ -477,7 +407,6 @@ void LV::compute_rhs() {
     jacobian_matrix.add(dof_indices, cell_matrix);
 //    printf("the number of nonzero entries is %d\n", jacobian_matrix.n_nonzero_elements());
     system_rhs.add(dof_indices, cell_rhs);
-    ++cell_poisson;
   }
 }
 // removed commented out Dirichlet BCs which are not needed here. 
@@ -489,33 +418,19 @@ void LV::solve_linear_system() {
   delta_owned = 0.0;
   delta_owned.compress(VectorOperation::insert);   //assigning the delta_owned vector to a Trilinos vector
 
-  SolverControl solver_control(20000, 1e-4 * system_rhs.l2_norm());
+  SolverControl solver_control(15000, 1.5e-4 * system_rhs.l2_norm());
 
-  // Usiamo GMRES con monitoraggio della cronologia
-  SolverGMRES<TrilinosWrappers::MPI::Vector>::AdditionalData data;
-  data.max_n_tmp_vectors= 100; // Aumentiamo il restart per aiutare l'anisotropia
-  
-  SolverGMRES<TrilinosWrappers::MPI::Vector> solver(solver_control, data);
-
+  SolverGMRES<TrilinosWrappers::MPI::Vector> solver(solver_control);
   TrilinosWrappers::PreconditionAMG preconditioner;
-  TrilinosWrappers::PreconditionAMG::AdditionalData amg_data;
-  amg_data.elliptic = true; // Aiuta AMG a capire che è un problema di elasticità
-  amg_data.aggregation_threshold = 0.02; 
-
-  const FEValuesExtractors::Vector displacements(0);
-  DoFTools::extract_constant_modes(dof_handler, 
-                                   fs->component_mask(displacements), 
-                                   amg_data.constant_modes);
-  
-  preconditioner.initialize(jacobian_matrix, amg_data);
-  
+  preconditioner.initialize(
+      jacobian_matrix, TrilinosWrappers::PreconditionAMG::AdditionalData(1.0));
 
   solver.solve(jacobian_matrix, delta_owned, system_rhs, preconditioner);
   last_iteration = solver_control.last_step();
   pcout << "  " << solver_control.last_step() << " GMRES iterations "
       << "(final residual " << std::scientific << std::setprecision(3)
       << solver_control.last_value() << ")" << std::endl;
-  
+        
 }
 
 LV::LineSearchResult
@@ -705,18 +620,11 @@ void LV::solve_newton() {
     }
 
 
-<<<<<<<< HEAD:src/holzapfel/left_ventricle.cpp
-void LV::solve(){
-  double obj_pressure = 8.0;
-  double start_pressure = 0.5;
-  int num_steps = 50;
-========
 void LV::solve(int num_steps){
   //load stepping
   // stability condition
   double obj_pressure = 15.0;
   double start_pressure = 1.0;
->>>>>>>> guccione:src/guccione/left_ventricle.cpp
   double base_dp = (obj_pressure - start_pressure) / (double)num_steps;
   double dp = base_dp;
 
