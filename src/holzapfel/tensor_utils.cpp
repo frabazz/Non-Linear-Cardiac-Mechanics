@@ -1,5 +1,7 @@
 #include "tensor_utils.hpp"
 
+namespace holzapfel {
+
 // TensorUtils: hyperelastic material via automatic differentiation (AD)
 //given deformation gradient F, compute
 //    P  = dW/dF   (first Piola-Kirchhoff stress tensor)
@@ -96,3 +98,20 @@ typename TensorUtils::ADNumberType TensorUtils::compute_W(const Tensor<2, dim, A
           
       return psi_ad;
     }
+
+TensorUtils::TensorUtils(const Params &p) : TensorUtils() {
+  a = p.a; b = p.b;
+  a_f = p.a_f; b_f = p.b_f;
+  a_s = p.a_s; b_s = p.b_s;
+  a_fs = p.a_fs; b_fs = p.b_fs;
+  kappa = p.kappa;
+}
+
+void TensorUtils::compute_tensors(Tensor<2, dim>              F,
+                                   Tensor<2, dim>              &P,
+                                   Tensor<4, dim>              &C,
+                                   const cardiac::MaterialInput &in) {
+  compute_tensors(F, P, C, in.f0, in.s0, in.n0);
+}
+
+} // namespace holzapfel

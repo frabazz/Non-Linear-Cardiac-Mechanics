@@ -52,8 +52,15 @@ foreach(MODEL ${MODELS})
 
     add_library(TensorUtils_${MODEL} STATIC src/${MODEL}/tensor_utils.cpp)
     deal_ii_setup_target(TensorUtils_${MODEL})
-    
+
     add_executable(cardiac_${MODEL} src/${MODEL}/main.cpp)
     target_link_libraries(cardiac_${MODEL} LeftVentricle_${MODEL} SystemAssembler TensorUtils_${MODEL} Poisson)
     deal_ii_setup_target(cardiac_${MODEL})
 endforeach()
+
+
+add_executable(cardiac src/main.cpp)
+target_link_libraries(cardiac
+    LeftVentricle_holzapfel LeftVentricle_guccione
+    SystemAssembler TensorUtils_holzapfel TensorUtils_guccione Poisson)
+deal_ii_setup_target(cardiac)

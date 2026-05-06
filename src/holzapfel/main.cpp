@@ -1,6 +1,8 @@
 #include "left_ventricle.hpp"
 #include <iostream>
 
+using holzapfel::LV;
+
 
 int main(int argc, char* argv[]){
   Utilities::MPI::MPI_InitFinalize mpi_initialization(argc, argv, 1); 
@@ -27,8 +29,6 @@ int main(int argc, char* argv[]){
 
 
   model.setup();
-
-  model.init_poisson();
 
   model.solve(); //solve the nonlinear problem by (pseudo)Newton+line search
 

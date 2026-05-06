@@ -15,6 +15,8 @@
 #include <deal.II/numerics/fe_field_function.h>
 #include <deal.II/base/convergence_table.h>
 
+namespace holzapfel {
+
 void LV::setup() {
   last_iteration = 0;
   pcout << "===============================================" << std::endl;
@@ -701,6 +703,8 @@ void LV::solve_newton() {
 
 
 void LV::solve(){
+  init_poisson();
+
   double obj_pressure = 8.0;
   double start_pressure = 0.5;
   int num_steps = 50;
@@ -890,3 +894,5 @@ void LV::run_convergence_study(const std::vector<std::string> &mesh_files,
   table.write_text(std::cout);
 }
 */
+
+} // namespace holzapfel

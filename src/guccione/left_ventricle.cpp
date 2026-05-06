@@ -15,6 +15,8 @@
 #include <deal.II/numerics/fe_field_function.h>
 #include <deal.II/base/convergence_table.h>
 
+namespace guccione {
+
 void LV::setup() {
   last_iteration = 0;
   pcout << "===============================================" << std::endl;
@@ -1021,3 +1023,5 @@ void LV::run_convergence_study(const std::vector<std::string> &mesh_files,
                        << std::endl;
     }
 }
+
+} // namespace guccione

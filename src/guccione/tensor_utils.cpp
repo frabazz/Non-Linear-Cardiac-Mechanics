@@ -1,5 +1,7 @@
 #include "tensor_utils.hpp"
 
+namespace guccione {
+
 // TensorUtils: hyperelastic material via automatic differentiation (AD)
 //given deformation gradient F, compute
 //    P  = dW/dF   (first Piola-Kirchhoff stress tensor)
@@ -189,5 +191,20 @@ TensorUtils::compute_W(const Tensor<2, dim, ADNumberType> &F,
   return psi_ad;
 }
 
+TensorUtils::TensorUtils(const Params &p) : TensorUtils() {
+  mu_hook = p.mu_hook; k_hook = p.k_hook;
+  b_ff = p.b_ff; b_ss = p.b_ss; b_nn = p.b_nn;
+  b_fs = p.b_fs; b_fn = p.b_fn; b_sn = p.b_sn;
+  C_param = p.C_param;
+}
 
-    
+void TensorUtils::compute_tensors(Tensor<2, dim>              F,
+                                   Tensor<2, dim>              &P,
+                                   Tensor<4, dim>              &C,
+                                   const cardiac::MaterialInput &in) {
+  compute_tensors(F, in.p, P, C);
+}
+
+} // namespace guccione
+
+

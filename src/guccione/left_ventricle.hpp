@@ -41,13 +41,15 @@
 #include <cmath>
 
 #include "../common.hpp"
+#include "../cardiac_solver.hpp"
 
 using namespace dealii;
 
+namespace guccione {
 
 // Class managing the differential problem.
- 
-class LV {
+
+class LV : public cardiac::ISolver {
 public:
   // Physical dimension (1D, 2D, 3D)
   static constexpr unsigned int dim = 3;
@@ -118,9 +120,8 @@ public:
         mesh(MPI_COMM_WORLD), pcout(std::cout, mpi_rank == 0) {}
 
   // Initialization.
-  void setup();
+  void setup() override;
 
-  
   // System assembly.
   void assemble_system();
 
@@ -129,8 +130,8 @@ public:
 
   void solve_newton();
 
-  
-  void solve(int num_steps = 100);
+  void solve() override { solve(100); }
+  void solve(int num_steps);
   // Output.
   void output(unsigned int step) const;
 
@@ -213,6 +214,7 @@ protected:
       const TrilinosWrappers::MPI::Vector &delta_prev,
       const double residual_prev);
 
-  
-      
+
 };
+
+} // namespace guccione

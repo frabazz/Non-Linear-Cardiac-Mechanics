@@ -40,13 +40,16 @@
 #include <iostream>
 
 #include "../common.hpp"
+#include "../material_model.hpp"
 
 // for reference:
 // https://dealii.org/current/doxygen/deal.II/classDifferentiation_1_1AD_1_1ScalarFunction.html
 
 using namespace dealii;
 
-class TensorUtils {
+namespace holzapfel {
+
+class TensorUtils : public cardiac::IMaterialModel {
 
   // TODO, import dim from LV
   constexpr static unsigned int dim = 3;
@@ -55,7 +58,16 @@ class TensorUtils {
   using ADTensor2 = Tensor<2, dim, ADNumberType>;
 
 public:
+  struct Params {
+    double a = 0.059,   b = 8.023;
+    double a_f = 18.472, b_f = 16.026;
+    double a_s = 2.481,  b_s = 11.120;
+    double a_fs = 0.216, b_fs = 11.436;
+    double kappa = 500;
+  };
+
   TensorUtils();
+  explicit TensorUtils(const Params &p);
 
   void compute_tensors(
                        Tensor<2, dim> F,
@@ -64,6 +76,11 @@ public:
                        const Tensor<1, dim> &f0,
                        const Tensor<1, dim> &s0,
                        const Tensor<1, dim> &n0);
+
+  void compute_tensors(Tensor<2, dim>              F,
+                       Tensor<2, dim>              &P,
+                       Tensor<4, dim>              &C,
+                       const cardiac::MaterialInput &in) override;
 
 private:
   ADHelper ad_helper;
@@ -88,3 +105,5 @@ private:
   double b_fs = 11.436;
   double kappa = 500;
 };
+
+} // namespace holzapfel
