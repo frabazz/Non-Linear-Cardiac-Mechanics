@@ -1,116 +1,93 @@
-# PDE_project
+# Non-Linear Cardiac Mechanics
 
-Finite-element nonlinear cardiac mechanics implementation.
+Parallel finite-element solver for nonlinear cardiac mechanics, implemented with deal.II, MPI, and Trilinos.
 
-## What this repo contains
+The code solves a nonlinear equilibrium problem for a 3D left-ventricular geometry under internal pressure loading, using a Newton–Raphson method with backtracking line search. Two hyperelastic material models are provided.
 
-- A parallel deal.II code that solves a nonlinear equilibrium problem using a Newton method with backtracking line search.
-- A vector-valued displacement unknown $u \in \mathbb{R}^3$.
-- A hyperelastic material implemented via automatic differentiation (AD): energy density $W(F)$, with
-	- first Piola–Kirchhoff stress $P = \partial W/\partial F$
-	- consistent tangent $\mathrm{d}P/\mathrm{d}F$ (for Newton)
+## Material models
 
+### Holzapfel-Ogden (2009)
+Anisotropic model with fiber (`f0`), sheet (`s0`), and normal (`n0`) directions. Fiber directions are computed by solving a Laplace problem (transmural coordinate λ) and applying Gram-Schmidt orthogonalization. The strain energy is:
 
+$$W = \frac{a}{2b} \left(e^{b(I_1-3)}-1\right) + \sum_{i \in \{f,s\}} \frac{a_i}{2b_i}\left(e^{b_i(I_{4i}-1)^2}-1\right) + \frac{a_{fs}}{2b_{fs}}\left(e^{b_{fs} I_{8fs}^2}-1\right) + \frac{\kappa}{2}(J-1)^2$$
 
-## Build Requirements
+### Guccione (1991)
+Transversely isotropic model. Fiber directions are computed analytically from prolate spheroidal coordinates. The strain energy is:
 
-The project is configured through CMake and relies on:
+$$W = \frac{C}{2}\left(e^Q - 1\right) + \frac{\kappa}{2}(J-1)^2, \quad Q = b_{ff}E_{ff}^2 + b_{ss}E_{ss}^2 + \cdots$$
+
+## Code structure
+
+```
+src/
+├── constants.hpp               # all model and solver constants
+├── cardiac_solver.hpp          # ISolver interface
+├── material_model.hpp          # IMaterialModel interface
+├── lv_base.hpp / lv_base.cpp   # shared Newton solver, assembly, output
+├── common.hpp
+├── system_assembler.*
+├── holzapfel/
+│   ├── left_ventricle.hpp/cpp  # Holzapfel LV: Poisson solve + compute_rhs
+│   ├── tensor_utils.hpp/cpp    # Holzapfel-Ogden W(F) via AD
+│   ├── Poisson.hpp/cpp         # transmural coordinate λ
+│   └── main.cpp
+└── guccione/
+    ├── left_ventricle.hpp/cpp  # Guccione LV: compute_rhs + convergence study
+    ├── tensor_utils.hpp/cpp    # Guccione W(F) via AD + prolate coords
+    └── main.cpp
+```
+
+`LVBase` provides `setup()`, `assemble_system()`, `solve_linear_system()`, `line_search()`, `solve_newton()`, `solve_loop()`, and `output()`. Each model only implements `compute_rhs()`.
+
+All numerical and physical constants (material parameters, pressure ranges, solver settings, boundary IDs, fiber angles, geometry) are centralized in `src/constants.hpp` under `cardiac::constants::holzapfel` and `cardiac::constants::guccione`.
+
+## Boundary IDs
+
+| ID | Condition |
+|----|-----------|
+| 2  | Dirichlet — zero displacement (apex ring) |
+| 3  | Neumann — follower pressure (endocardium) |
+| 4  | Robin — epicardial spring |
+
+## Build requirements
 
 - C++17 compiler
 - MPI
-- deal.II 9.3.1
-- Boost >= 1.72 (filesystem, iostreams, serialization)
-
-Notes:
-- deal.II must be compiled with Trilinos enabled (the code uses TrilinosWrappers).
-- Sacado comes from Trilinos (used for scalar extraction/AD-related utilities).
+- deal.II ≥ 9.3.1 (with Trilinos enabled)
+- Boost ≥ 1.72 (filesystem, iostreams, serialization)
+- Sacado (from Trilinos)
 
 ## Build
 
-Minimal build steps (from the repository root):
-
 ```bash
-mkdir -p build
-cd build
+mkdir -p build && cd build
 cmake ..
 make
 ```
 
-
-The executable is built as:
-
-- `build/cardiac.o`
+This produces three executables: `cardiac_holzapfel`, `cardiac_guccione`, and `cardiac` (demo showing both models via the common `ISolver` interface).
 
 ## Run
 
-Run with MPI (even single or multiple rank):
-
 ```bash
 cd build
-mpirun -n 1 ./cardiac.o
+mpirun -n 4 ./cardiac_holzapfel
+mpirun -n 4 ./cardiac_guccione
 ```
 
-
-```bash
-mpirun -n 4 ./cardiac.o
-```
-
-### Selecting the mesh
-
-The input mesh is currently hard-coded in [src/main.cpp](src/main.cpp) via:
-
-- `ventricular_mesh_path = "../ventricular_meshes/msh/ventricle_0_7.msh"`
-
-It is also possible to switch to a slab mesh under `mesh/` (also `.msh`) by changing that path.
+The mesh path is set in the respective `main.cpp`.
 
 ## Output
 
-The code writes parallel VTU output (PVTU + per-rank VTU pieces) to the current working directory:
+Parallel VTU output written to the working directory at each pressure step:
 
-- `output-<mesh_stem>_0.pvtu`
-- `output-<mesh_stem>_0_*.vtu`
+- `output-<mesh_stem>_<step>.pvtu` — open in ParaView
+- Scalar field `solution_mag` = $|u|$ included alongside the displacement vector
 
-The `.pvtu` can be opened in ParaView.
+## Convergence study (Guccione only)
 
-In addition to the displacement vector field (`solution`), the output also includes a derived scalar field:
+```cpp
+guccione::LV::run_convergence_study({"mesh_coarse.msh", "mesh_fine.msh"}, r, "convergence.csv");
+```
 
-- `solution_mag`: magnitude of the displacement, i.e. $|u|$
-
-## Code structure
-
-- [src/main.cpp](src/main.cpp)
-	- Program entry point and high-level workflow.
-	- Instantiates `LV`, then calls `setup()`, `solve_newton()`, and `output()`.
-
-- [src/left_ventricle.hpp](src/left_ventricle.hpp), [src/left_ventricle.cpp](src/left_ventricle.cpp)
-	- `LV` class: mesh/FE initialization, assembly, Newton solver, output.
-	- `compute_rhs()` assembles:
-		- residual vector (stored in `system_rhs`)
-		- Jacobian matrix (stored in `jacobian_matrix`)
-
-- [src/tensor_utils.hpp](src/tensor_utils.hpp), [src/tensor_utils.cpp](src/tensor_utils.cpp)
-	- Material routine based on an energy density $W(F)$.
-	- Uses deal.II AD to compute stress and consistent tangent:
-		- gradient of $W$ wrt $F$ entries → $P$
-		- Hessian of $W$ wrt $F$ entries → $\mathrm{d}P/\mathrm{d}F$
-
-- [src/system_assembler.hpp](src/system_assembler.hpp), [src/system_assembler.cpp](src/system_assembler.cpp)
-	- Utility for assembling Jacobians of generic vector functions via AD(currently unused).
-
-## Boundary IDs
-
-Boundary conditions are applied by boundary id in [src/left_ventricle.cpp](src/left_ventricle.cpp).
-The code prints the boundary IDs present in the mesh during `setup()`.
-
-Current conventions used in assembly:
-
-- Dirichlet: `boundary_id == 2` (displacement fixed to zero)
-- Neumann-like term: `boundary_id == 3`
-- Robin-like term: `boundary_id == 4`
-
-
-## Notes on the nonlinear solve
-
-- Newton iterations assemble residual/Jacobian each step.
-- A backtracking line search is used to avoid invalid states (all 0 residuals and nans)
-implementation.
+Runs on all meshes, gathers solutions to rank 0, and computes self-convergence rates in L2 and H1.
