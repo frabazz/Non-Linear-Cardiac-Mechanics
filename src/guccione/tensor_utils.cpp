@@ -1,4 +1,5 @@
 #include "tensor_utils.hpp"
+#include "../constants.hpp"
 
 namespace guccione {
 
@@ -19,8 +20,9 @@ TensorUtils::TensorUtils() : ad_helper(dim * dim) {
 void TensorUtils::compute_tensors(Tensor<2, dim> F, const Point<dim>& p, Tensor<2, dim> &P, Tensor<4, dim> &C) {
 
 
-   const double d = 2.91;
-  // const double z_base = 1.19;
+  namespace ccg = cardiac::constants::guccione;
+  namespace cc  = cardiac::constants;
+  const double d = ccg::PROLATE_D;
 
   double x = p[0], y = p[1], z = p[2];
   
@@ -67,11 +69,10 @@ void TensorUtils::compute_tensors(Tensor<2, dim> F, const Point<dim>& p, Tensor<
   Tensor<1, 3> e_phi   = g_phi / g_phi.norm();     // circumferential
 
  
-  const double numbers_PI = 3.14159265358979323846;
-  const double alpha_endo =  60.0 * numbers_PI / 180.0;  
-  const double alpha_epi  = -60.0 * numbers_PI / 180.0;  
-  const double xi_endo = 0.6; 
-  const double xi_epi = 1.02; 
+  const double alpha_endo = cc::FIBER_ALPHA_ENDO * M_PI / 180.0;
+  const double alpha_epi  = cc::FIBER_ALPHA_EPI  * M_PI / 180.0;
+  const double xi_endo    = ccg::PROLATE_XI_ENDO;
+  const double xi_epi     = ccg::PROLATE_XI_EPI;
   double wall_fraction = (xi - xi_endo) / (xi_epi - xi_endo); 
   
   // Ensure wall between 0 and 1 to avoid extrapolation outside the wall

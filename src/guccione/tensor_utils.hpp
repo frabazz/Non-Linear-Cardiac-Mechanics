@@ -41,6 +41,7 @@
 
 #include "../common.hpp"
 #include "../material_model.hpp"
+#include "../constants.hpp"
 
 // for reference:
 // https://dealii.org/current/doxygen/deal.II/classDifferentiation_1_1AD_1_1ScalarFunction.html
@@ -59,10 +60,15 @@ class TensorUtils : public cardiac::IMaterialModel {
 
 public:
   struct Params {
-    double mu_hook = 4.0,  k_hook = 50.0;
-    double b_ff = 8.0,     b_ss = 2.0,    b_nn = 2.0;
-    double b_fs = 4.0,     b_fn = 4.0,    b_sn = 2.0;
-    double C_param = 2.0;
+    double mu_hook = cardiac::constants::guccione::MU_HOOK;
+    double k_hook  = cardiac::constants::guccione::K_HOOK;
+    double b_ff    = cardiac::constants::guccione::B_FF;
+    double b_ss    = cardiac::constants::guccione::B_SS;
+    double b_nn    = cardiac::constants::guccione::B_NN;
+    double b_fs    = cardiac::constants::guccione::B_FS;
+    double b_fn    = cardiac::constants::guccione::B_FN;
+    double b_sn    = cardiac::constants::guccione::B_SN;
+    double C_param = cardiac::constants::guccione::C_PARAM;
   };
 
   TensorUtils();
@@ -87,16 +93,15 @@ ADNumberType compute_W(const Tensor<2, dim, ADNumberType> &F,
                        const Tensor<1, dim> &s,
                        const Tensor<1, dim> &n) const;
 
-  double mu_hook = 4.0;
-  double k_hook = 50.0;
-
-  double b_ff = 8.0;
-  double b_ss = 2.0;
-  double b_nn = 2.0;
-  double b_fs = 4.0;
-  double b_fn = 4.0;
-  double b_sn = 2.0;
-  double C_param = 2.0;
+  double mu_hook = cardiac::constants::guccione::MU_HOOK;
+  double k_hook  = cardiac::constants::guccione::K_HOOK;
+  double b_ff    = cardiac::constants::guccione::B_FF;
+  double b_ss    = cardiac::constants::guccione::B_SS;
+  double b_nn    = cardiac::constants::guccione::B_NN;
+  double b_fs    = cardiac::constants::guccione::B_FS;
+  double b_fn    = cardiac::constants::guccione::B_FN;
+  double b_sn    = cardiac::constants::guccione::B_SN;
+  double C_param = cardiac::constants::guccione::C_PARAM;
 };
 
 } // namespace guccione

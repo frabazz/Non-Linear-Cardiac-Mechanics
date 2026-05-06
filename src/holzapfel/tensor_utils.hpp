@@ -41,6 +41,7 @@
 
 #include "../common.hpp"
 #include "../material_model.hpp"
+#include "../constants.hpp"
 
 // for reference:
 // https://dealii.org/current/doxygen/deal.II/classDifferentiation_1_1AD_1_1ScalarFunction.html
@@ -59,11 +60,15 @@ class TensorUtils : public cardiac::IMaterialModel {
 
 public:
   struct Params {
-    double a = 0.059,   b = 8.023;
-    double a_f = 18.472, b_f = 16.026;
-    double a_s = 2.481,  b_s = 11.120;
-    double a_fs = 0.216, b_fs = 11.436;
-    double kappa = 500;
+    double a     = cardiac::constants::holzapfel::A;
+    double b     = cardiac::constants::holzapfel::B;
+    double a_f   = cardiac::constants::holzapfel::A_F;
+    double b_f   = cardiac::constants::holzapfel::B_F;
+    double a_s   = cardiac::constants::holzapfel::A_S;
+    double b_s   = cardiac::constants::holzapfel::B_S;
+    double a_fs  = cardiac::constants::holzapfel::A_FS;
+    double b_fs  = cardiac::constants::holzapfel::B_FS;
+    double kappa = cardiac::constants::holzapfel::KAPPA;
   };
 
   TensorUtils();
@@ -95,15 +100,15 @@ private:
   // double mu_hook = 4.0;
   // double k_hook = 2.0;
 
-  double a = 0.059;
-  double b = 8.023;
-  double a_f = 18.472;
-  double b_f = 16.026;
-  double a_s = 2.481;
-  double b_s = 11.120;
-  double a_fs = 0.216;
-  double b_fs = 11.436;
-  double kappa = 500;
+  double a     = cardiac::constants::holzapfel::A;
+  double b     = cardiac::constants::holzapfel::B;
+  double a_f   = cardiac::constants::holzapfel::A_F;
+  double b_f   = cardiac::constants::holzapfel::B_F;
+  double a_s   = cardiac::constants::holzapfel::A_S;
+  double b_s   = cardiac::constants::holzapfel::B_S;
+  double a_fs  = cardiac::constants::holzapfel::A_FS;
+  double b_fs  = cardiac::constants::holzapfel::B_FS;
+  double kappa = cardiac::constants::holzapfel::KAPPA;
 };
 
 } // namespace holzapfel
