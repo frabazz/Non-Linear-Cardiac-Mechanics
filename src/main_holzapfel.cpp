@@ -1,6 +1,6 @@
 #include "cardiac/lv.hpp"
-#include "cardiac/strain_energy_holzapfel.hpp"
-#include "cardiac/fibers_laplace.hpp"
+#include "cardiac/strain_energy.hpp"
+#include "cardiac/fiber_field.hpp"
 #include "holzapfel/Poisson.hpp"
 #include "constants.hpp"
 

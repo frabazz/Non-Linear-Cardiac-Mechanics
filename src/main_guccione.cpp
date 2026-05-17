@@ -1,6 +1,6 @@
 #include "cardiac/lv.hpp"
-#include "cardiac/strain_energy_guccione.hpp"
-#include "cardiac/fibers_analytical.hpp"
+#include "cardiac/strain_energy.hpp"
+#include "cardiac/fiber_field.hpp"
 #include "constants.hpp"
 #include <iostream>
 #include <string>

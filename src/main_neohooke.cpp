@@ -1,6 +1,6 @@
 #include "cardiac/lv.hpp"
-#include "cardiac/strain_energy_neohooke.hpp"
-#include "cardiac/fibers_trivial.hpp"
+#include "cardiac/strain_energy.hpp"
+#include "cardiac/fiber_field.hpp"
 
 int main(int argc, char *argv[]) {
   dealii::Utilities::MPI::MPI_InitFinalize mpi_initialization(argc, argv, 1);

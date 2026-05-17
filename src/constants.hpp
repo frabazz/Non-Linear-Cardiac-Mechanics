@@ -29,7 +29,7 @@ namespace holzapfel {
   constexpr double ALPHA_ROBIN     =  3.75;
 
   // pressure loading
-  constexpr double P_START  = 0.1;
+  constexpr double P_START  = 0.5;
   constexpr double P_END    = 8.0;
   constexpr int    N_STEPS  = 50;
 
