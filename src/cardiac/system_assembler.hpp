@@ -43,7 +43,7 @@
 #include <memory>
 #include <functional>
 
-#include "common.hpp"
+#include "../common.hpp"
 
 // for reference:
 // https://dealii.org/current/doxygen/deal.II/classDifferentiation_1_1AD_1_1VectorFunction.html

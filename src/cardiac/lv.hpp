@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../lv_base.hpp"
+#include "lv_base.hpp"
 #include "strain_energy.hpp"
 #include "fiber_field.hpp"
 #include "tensor_utils.hpp"

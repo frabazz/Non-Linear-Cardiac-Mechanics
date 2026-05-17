@@ -40,9 +40,8 @@
 #include <iostream>
 #include <cmath>
 
-#include "common.hpp"
-#include "cardiac_solver.hpp"
-#include "constants.hpp"
+#include "../common.hpp"
+#include "../constants.hpp"
 
 using namespace dealii;
 

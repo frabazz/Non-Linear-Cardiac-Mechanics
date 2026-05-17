@@ -1,7 +1,7 @@
 #include "cardiac/lv.hpp"
 #include "cardiac/strain_energy.hpp"
 #include "cardiac/fiber_field.hpp"
-#include "holzapfel/Poisson.hpp"
+#include "cardiac/Poisson.hpp"
 #include "constants.hpp"
 
 #include <deal.II/dofs/dof_tools.h>

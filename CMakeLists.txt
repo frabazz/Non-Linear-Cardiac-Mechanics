@@ -37,14 +37,14 @@ deal_ii_initialize_cached_variables()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfloat-conversion -Wmissing-braces -Wnon-virtual-dtor -Wfatal-errors -g")
 
-add_library(SystemAssembler STATIC src/system_assembler.cpp)
+add_library(SystemAssembler STATIC src/cardiac/system_assembler.cpp)
 deal_ii_setup_target(SystemAssembler)
 
 
-add_library(Poisson STATIC src/holzapfel/Poisson.cpp)
+add_library(Poisson STATIC src/cardiac/Poisson.cpp)
 deal_ii_setup_target(Poisson)
 
-add_library(LVBase STATIC src/lv_base.cpp)
+add_library(LVBase STATIC src/cardiac/lv_base.cpp)
 deal_ii_setup_target(LVBase)
 
 add_library(CardiacTensorUtils STATIC src/cardiac/tensor_utils.cpp)
