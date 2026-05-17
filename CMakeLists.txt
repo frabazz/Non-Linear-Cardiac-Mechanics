@@ -56,15 +56,10 @@ deal_ii_setup_target(CardiacLV)
 set(MODELS guccione holzapfel)
 
 foreach(MODEL ${MODELS})
-    add_library(LeftVentricle_${MODEL} STATIC src/${MODEL}/left_ventricle.cpp)
-    deal_ii_setup_target(LeftVentricle_${MODEL})
-
-    add_library(TensorUtils_${MODEL} STATIC src/${MODEL}/tensor_utils.cpp)
-    deal_ii_setup_target(TensorUtils_${MODEL})
 
     add_executable(cardiac_${MODEL} src/main_${MODEL}.cpp)
     target_link_libraries(cardiac_${MODEL}
-        LeftVentricle_${MODEL} LVBase SystemAssembler TensorUtils_${MODEL} Poisson
+        LVBase Poisson
         CardiacLV CardiacTensorUtils)
     deal_ii_setup_target(cardiac_${MODEL})
 endforeach()
@@ -72,8 +67,8 @@ endforeach()
 
 add_executable(cardiac src/main.cpp)
 target_link_libraries(cardiac
-    LeftVentricle_holzapfel LeftVentricle_guccione LVBase
-    SystemAssembler TensorUtils_holzapfel TensorUtils_guccione Poisson
+     LVBase
+    SystemAssembler  Poisson
     CardiacLV CardiacTensorUtils)
 deal_ii_setup_target(cardiac)
 
