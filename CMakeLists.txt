@@ -35,7 +35,7 @@ deal_ii_initialize_cached_variables()
 # Add useful compiler flags.
 #file(GLOB_RECURSE SOURCE_FILES "src/*.cpp" "src/*.hpp")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfloat-conversion -Wmissing-braces -Wnon-virtual-dtor -Wfatal-errors")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfloat-conversion -Wmissing-braces -Wnon-virtual-dtor -Wfatal-errors -g")
 
 add_library(SystemAssembler STATIC src/system_assembler.cpp)
 deal_ii_setup_target(SystemAssembler)
@@ -47,6 +47,12 @@ deal_ii_setup_target(Poisson)
 add_library(LVBase STATIC src/lv_base.cpp)
 deal_ii_setup_target(LVBase)
 
+add_library(CardiacTensorUtils STATIC src/cardiac/tensor_utils.cpp)
+deal_ii_setup_target(CardiacTensorUtils)
+
+add_library(CardiacLV STATIC src/cardiac/lv.cpp)
+deal_ii_setup_target(CardiacLV)
+
 set(MODELS guccione holzapfel)
 
 foreach(MODEL ${MODELS})
@@ -56,8 +62,10 @@ foreach(MODEL ${MODELS})
     add_library(TensorUtils_${MODEL} STATIC src/${MODEL}/tensor_utils.cpp)
     deal_ii_setup_target(TensorUtils_${MODEL})
 
-    add_executable(cardiac_${MODEL} src/${MODEL}/main.cpp)
-    target_link_libraries(cardiac_${MODEL} LeftVentricle_${MODEL} LVBase SystemAssembler TensorUtils_${MODEL} Poisson)
+    add_executable(cardiac_${MODEL} src/main_${MODEL}.cpp)
+    target_link_libraries(cardiac_${MODEL}
+        LeftVentricle_${MODEL} LVBase SystemAssembler TensorUtils_${MODEL} Poisson
+        CardiacLV CardiacTensorUtils)
     deal_ii_setup_target(cardiac_${MODEL})
 endforeach()
 
@@ -65,5 +73,10 @@ endforeach()
 add_executable(cardiac src/main.cpp)
 target_link_libraries(cardiac
     LeftVentricle_holzapfel LeftVentricle_guccione LVBase
-    SystemAssembler TensorUtils_holzapfel TensorUtils_guccione Poisson)
+    SystemAssembler TensorUtils_holzapfel TensorUtils_guccione Poisson
+    CardiacLV CardiacTensorUtils)
 deal_ii_setup_target(cardiac)
+
+add_executable(cardiac_neohooke src/main_neohooke.cpp)
+target_link_libraries(cardiac_neohooke LVBase SystemAssembler CardiacLV CardiacTensorUtils)
+deal_ii_setup_target(cardiac_neohooke)

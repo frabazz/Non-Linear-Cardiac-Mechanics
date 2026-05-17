@@ -62,6 +62,8 @@ public:
     bool   amg_elliptic               = cardiac::constants::holzapfel::AMG_ELLIPTIC;
     double amg_aggregation_threshold  = cardiac::constants::holzapfel::AMG_AGG_THRESHOLD;
     bool   amg_extract_constant_modes = cardiac::constants::holzapfel::AMG_CONST_MODES;
+
+    double alpha_robin = cardiac::constants::holzapfel::ALPHA_ROBIN;
   };
 
   class ForcingTerm : public Function<dim> {
@@ -84,6 +86,12 @@ public:
          const SolverParams &params_);
 
   void setup() override;
+
+  parallel::fullydistributed::Triangulation<dim>& get_mesh() { return mesh; }
+  const std::unique_ptr<FiniteElement<dim>>&       get_fe()  const { return fe; }
+  const std::unique_ptr<Quadrature<dim>>&          get_quadrature() const { return quadrature; }
+  const std::unique_ptr<Quadrature<dim - 1>>&      get_quadrature_face() const { return quadrature_face; }
+  ConditionalOStream&                              get_pcout() { return pcout; }
   void assemble_system();
   void solve_linear_system();
   void solve_newton();

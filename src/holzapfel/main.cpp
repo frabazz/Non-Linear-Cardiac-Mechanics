@@ -1,39 +1,48 @@
-#include "left_ventricle.hpp"
-#include <iostream>
+#include "../cardiac/lv.hpp"
+#include "../cardiac/strain_energy_holzapfel.hpp"
+#include "../cardiac/fibers_laplace.hpp"
+#include "Poisson.hpp"
+#include "../constants.hpp"
 
-using holzapfel::LV;
+#include <deal.II/dofs/dof_tools.h>
 
+int main(int argc, char *argv[]) {
+  Utilities::MPI::MPI_InitFinalize mpi_initialization(argc, argv, 1);
 
-int main(int argc, char* argv[]){
-  Utilities::MPI::MPI_InitFinalize mpi_initialization(argc, argv, 1); 
-  //initialize MPI environment
+  const std::string ventricular_mesh_path = "../ventricular_meshes/msh/ventricle_0_7.msh";
 
-// This program solves a *nonlinear* problem (cardiac-like geometry) in parallel.
-// Pipeline:
-//   1) setup():    read mesh, build FE space/DoFs, sparsity patter, vectors, matrices...
-//   2) solve_newton(): repeatedly assemble residual+Jacobian and solve for updates
-//   3) output():   write solution to VTU/PVTU for visualization
-// MPI_InitFinalize keeps MPI alive for the entirity of main()
+  LVBase::SolverParams params;
+  params.alpha_robin = cardiac::constants::holzapfel::ALPHA_ROBIN;
 
-
-  std::string ventricular_mesh_path = "../ventricular_meshes/msh/ventricle_0_7.msh";
- // ventricular meshes created with geo file in mesh/ventricular_meshes/geo
-  
-  std::string cubic_mesh_path = "../mesh/cube_0_2.msh";
-
-  
-
-
-  LV model = LV(ventricular_mesh_path, 2); //2 is the polynomial degree
-  //todo could study how the degree affects the solution
-
-
+  cardiac::LV model(ventricular_mesh_path, 2,
+                    std::make_unique<cardiac::HolzapfelOgdenEnergy>(),
+                    nullptr,
+                    params);
   model.setup();
 
-  model.solve(); //solve the nonlinear problem by (pseudo)Newton+line search
+  DoFHandler<3> dof_handler_poisson;
+  TrilinosWrappers::MPI::Vector lambda;
 
+  Poisson poisson(model.get_mesh(), lambda,
+                  model.get_fe(), model.get_quadrature(), model.get_quadrature_face(),
+                  model.get_pcout());
+  poisson.setup();
+  poisson.assemble();
+  poisson.solve();
+  poisson.output();
 
-  
-  
+  dof_handler_poisson.reinit(model.get_mesh());
+  dof_handler_poisson.distribute_dofs(*model.get_fe());
+  IndexSet locally_relevant;
+  DoFTools::extract_locally_relevant_dofs(dof_handler_poisson, locally_relevant);
+
+  TrilinosWrappers::MPI::Vector lambda_ghost(
+      lambda.locally_owned_elements(), locally_relevant, MPI_COMM_WORLD);
+  lambda_ghost = lambda;
+
+  model.set_fibers(std::make_unique<cardiac::LaplaceFibers>(
+      dof_handler_poisson, lambda_ghost, *model.get_fe(), *model.get_quadrature()));
+
+  model.solve();
   return 0;
 }
