@@ -22,7 +22,7 @@ public:
 
   void set_fibers(std::unique_ptr<FiberField> fibers) { fibers_ = std::move(fibers); }
 
-  void solve() override;
+  void solve();
   void solve(int num_steps);
 
   struct SerialReplica {

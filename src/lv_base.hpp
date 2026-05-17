@@ -46,7 +46,7 @@
 
 using namespace dealii;
 
-class LVBase : public cardiac::ISolver {
+class LVBase{
 public:
   static constexpr unsigned int dim = 3;
 
@@ -74,7 +74,7 @@ public:
   class FunctionG : public Function<dim> {
   public:
     FunctionG() : Function<dim>(dim) {}
-    virtual double value(const Point<dim> &, const unsigned int = 0) const override {
+    virtual double value(const Point<dim> &, const unsigned int = 0) const override{
       return 0.0;
     }
   };
@@ -85,7 +85,7 @@ public:
          const unsigned int &r_,
          const SolverParams &params_);
 
-  void setup() override;
+  void setup();
 
   parallel::fullydistributed::Triangulation<dim>& get_mesh() { return mesh; }
   const std::unique_ptr<FiniteElement<dim>>&       get_fe()  const { return fe; }
@@ -143,4 +143,6 @@ protected:
   LineSearchResult line_search(const TrilinosWrappers::MPI::Vector &solution_prev,
                                 const TrilinosWrappers::MPI::Vector &delta_prev,
                                 double                               residual_prev);
+
+  virtual ~LVBase() = default;
 };
