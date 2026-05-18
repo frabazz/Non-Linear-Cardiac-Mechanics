@@ -98,8 +98,8 @@ private:
 class NeoHookeEnergy : public StrainEnergy {
 public:
   struct Params {
-    double mu    = 4.0;
-    double kappa = 50.0;
+    double mu    = constants::NeoHooke::MU_HOOK;
+    double kappa = constants::NeoHooke::K_HOOK;
   };
 
   NeoHookeEnergy() = default;
@@ -119,8 +119,8 @@ public:
   }
 
 private:
-  double mu    = 4.0;
-  double kappa = 50.0;
+  double mu    = constants::NeoHooke::MU_HOOK;
+  double kappa = constants::NeoHooke::K_HOOK;
 };
 
 class HolzapfelOgdenEnergy : public StrainEnergy {

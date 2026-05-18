@@ -28,9 +28,11 @@ namespace holzapfel {
   constexpr double FIBER_BETA_EPI  =  30.0;
   constexpr double ALPHA_ROBIN     =  3.75;
 
+  constexpr unsigned int CONVERGENCE_STUDY_STEPS = 2;
+  
   // pressure loading
-  constexpr double P_START  = 0.5;
-  constexpr double P_END    = 8.0;
+  constexpr double P_START  = 0.1;
+  constexpr double P_END    = 0.2;
   constexpr int    N_STEPS  = 50;
 
   // linear solver
@@ -70,7 +72,7 @@ namespace guccione {
   constexpr double       GMRES_TOL_FACTOR  = 1.5e-4;
   constexpr unsigned int GMRES_RESTART     = 30;
   constexpr bool         AMG_ELLIPTIC      = true;
-  constexpr double       AMG_AGG_THRESHOLD = 0.0;
+  constexpr double       AMG_AGG_THRESHOLD = 1e-4;
   constexpr bool         AMG_CONST_MODES   = false;
 
   // Guccione 1991 material parameters [kPa]
@@ -85,5 +87,31 @@ namespace guccione {
   constexpr double C_PARAM = 2.0;
 }
 
+namespace NeoHooke {
+  constexpr double       ALPHA_ROBIN             = 0.999918;
+  constexpr double       PROLATE_D               = 2.91;
+  constexpr double       PROLATE_XI_ENDO         = 0.6;
+  constexpr double       PROLATE_XI_EPI          = 1.02;
+  constexpr unsigned int CONVERGENCE_STUDY_STEPS = 25;
+
+  // pressure loading
+  constexpr double P_START = 1.0;
+  constexpr double P_END   = 15.0;
+  constexpr int    N_STEPS = 100;
+
+  // linear solver
+  constexpr unsigned int GMRES_MAX_ITER    = 15000;
+  constexpr double       GMRES_TOL_FACTOR  = 1.5e-4;
+  constexpr unsigned int GMRES_RESTART     = 30;
+  constexpr bool         AMG_ELLIPTIC      = true;
+  constexpr double       AMG_AGG_THRESHOLD = 1e-4;
+  constexpr bool         AMG_CONST_MODES   = false;
+
+  // Guccione 1991 material parameters [kPa]
+  constexpr double MU_HOOK = 4.0;
+  constexpr double K_HOOK  = 50.0;
+
+}
+  
 } // namespace constants
 } // namespace cardiac

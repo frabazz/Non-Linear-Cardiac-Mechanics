@@ -73,5 +73,5 @@ target_link_libraries(cardiac
 deal_ii_setup_target(cardiac)
 
 add_executable(cardiac_neohooke src/main_neohooke.cpp)
-target_link_libraries(cardiac_neohooke LVBase SystemAssembler CardiacLV CardiacTensorUtils)
+target_link_libraries(cardiac_neohooke LVBase Poisson SystemAssembler CardiacLV CardiacTensorUtils)
 deal_ii_setup_target(cardiac_neohooke)

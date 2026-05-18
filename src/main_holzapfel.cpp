@@ -6,21 +6,8 @@
 
 #include <deal.II/dofs/dof_tools.h>
 
-int main(int argc, char *argv[]) {
-  dealii::Utilities::MPI::MPI_InitFinalize mpi_initialization(argc, argv, 1);
-
-  const std::string mesh = "../ventricular_meshes/msh/ventricle_0_7.msh";
-
-  LVBase::SolverParams params;
-  params.alpha_robin = cardiac::constants::holzapfel::ALPHA_ROBIN;
-
-  cardiac::LV model(mesh, 2,
-                    std::make_unique<cardiac::HolzapfelOgdenEnergy>(),
-                    nullptr,
-                    params);
-  model.setup();
-
-  DoFHandler<3> dof_handler_poisson;
+std::unique_ptr<cardiac::LaplaceFibers> compute_laplace_fibers(cardiac::LV& model){
+    DoFHandler<3> dof_handler_poisson;
   TrilinosWrappers::MPI::Vector lambda;
 
   Poisson poisson(model.get_mesh(), lambda,
@@ -40,8 +27,48 @@ int main(int argc, char *argv[]) {
       lambda.locally_owned_elements(), locally_relevant, MPI_COMM_WORLD);
   lambda_ghost = lambda;
 
-  model.set_fibers(std::make_unique<cardiac::LaplaceFibers>(
-      dof_handler_poisson, lambda_ghost, *model.get_fe(), *model.get_quadrature()));
+  return std::make_unique<cardiac::LaplaceFibers>(
+      dof_handler_poisson, lambda_ghost, *model.get_fe(), *model.get_quadrature());
+
+}
+
+int main(int argc, char *argv[]) {
+  dealii::Utilities::MPI::MPI_InitFinalize mpi_initialization(argc, argv, 1);
+    LVBase::SolverParams params;
+  
+    if (argc > 1 && std::string(argv[1]) == "--convergence") {
+    const std::vector<std::string> ventricle_meshes = {
+      "../ventricular_meshes/msh/ventricle_0_99.msh",
+      "../ventricular_meshes/msh/ventricle_0_7.msh"
+      //      "../ventricular_meshes/msh/ventricle_0_5.msh",
+      //"../ventricular_meshes/msh/ventricle_0_3.msh",
+    };
+    cardiac::LV::run_convergence_study(
+        ventricle_meshes, 2,
+        [](cardiac::LV& model) {     
+          return std::make_pair(
+              std::make_unique<cardiac::HolzapfelOgdenEnergy>(),
+              compute_laplace_fibers(model));
+        },
+        params,
+        cardiac::constants::holzapfel::CONVERGENCE_STUDY_STEPS,
+        "convergence_ventricle.csv");
+    return 0;
+  }
+
+  
+  const std::string mesh = "../ventricular_meshes/msh/ventricle_0_7.msh";
+
+
+  params.alpha_robin = cardiac::constants::holzapfel::ALPHA_ROBIN;
+
+  cardiac::LV model(mesh, 2,
+                    std::make_unique<cardiac::HolzapfelOgdenEnergy>(),
+                    nullptr,
+                    params);
+  model.setup();
+
+  model.set_fibers(compute_laplace_fibers(model));
 
   model.solve();
   return 0;

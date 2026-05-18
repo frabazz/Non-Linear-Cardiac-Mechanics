@@ -423,9 +423,11 @@ void LV::run_convergence_study(const std::vector<std::string> &mesh_files,
 
   for (const auto &mesh_file : mesh_files) {
     pcout << "Convergence study: solving on " << mesh_file << "\n" << std::endl;
-    auto [energy, fibers] = make_ef();
-    auto model = std::make_unique<LV>(mesh_file, r, std::move(energy), std::move(fibers), params);
+    auto model = std::make_unique<LV>(mesh_file, r, nullptr, nullptr, params);
     model->setup();
+    auto [energy, fibers] = make_ef(*model);
+    model->set_fibers(std::move(fibers));
+    model->set_energy(std::move(energy));
     model->solve(n_steps);
     auto rep = model->gather_to_rank0();
     if (rank == 0)

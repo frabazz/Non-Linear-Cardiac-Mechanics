@@ -21,7 +21,8 @@ public:
      const SolverParams &params_ = SolverParams{});
 
   void set_fibers(std::unique_ptr<FiberField> fibers) { fibers_ = std::move(fibers); }
-
+  void set_energy(std::unique_ptr<StrainEnergy> energy) {energy_ = std::move(energy);}
+  
   void solve();
   void solve(int num_steps);
 
@@ -45,8 +46,9 @@ public:
 
   double compute_difference(const LV &reference, VectorTools::NormType norm) const;
 
-  using EnergyFiberFactory = std::function<
-      std::pair<std::unique_ptr<StrainEnergy>, std::unique_ptr<FiberField>>()>;
+  using EnergyFiberFactory = std::function<std::pair<
+    std::unique_ptr<StrainEnergy>,
+    std::unique_ptr<FiberField>>(LV&)>;
 
   static void run_convergence_study(const std::vector<std::string> &mesh_files,
                                     unsigned int                    r,
