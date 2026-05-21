@@ -69,12 +69,12 @@ public:
     e2 /= e2.norm();
 
     Tensor<1, 3> k_axis;
-    k_axis[2] = 1.0;
+    k_axis[2] = -1.0;
     Tensor<1, 3> e1 = k_axis - (k_axis * e2) * e2;
     e1 /= e1.norm();
-
     Tensor<1, 3> e0 = cross_product_3d(e1, e2);
 
+    
     const double alpha = (cc::FIBER_ALPHA_ENDO  * (1.0 - lam) + cc::FIBER_ALPHA_EPI  * lam) * M_PI / 180.0;
     const double beta  = (cch::FIBER_BETA_ENDO * (1.0 - lam) + cch::FIBER_BETA_EPI * lam) * M_PI / 180.0;
 
@@ -146,7 +146,7 @@ public:
 
     const Tensor<1, 3> e_xi    = g_xi    / g_xi.norm();
     const Tensor<1, 3> e_theta = g_theta / g_theta.norm();
-    const Tensor<1, 3> e_phi   = g_phi   / g_phi.norm();
+    const Tensor<1, 3> e_phi   = -g_phi   / g_phi.norm();
 
     const double alpha_endo_r = p_.alpha_endo * M_PI / 180.0;
     const double alpha_epi_r  = p_.alpha_epi  * M_PI / 180.0;

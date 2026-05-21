@@ -481,6 +481,73 @@ void LV::run_convergence_study(const std::vector<std::string> &mesh_files,
                      << (i == 0 ? std::string("") : std::to_string(rH1))
                      << std::endl;
   }
+
+  
 }
+
+void LV::output_fibers(const std::string &filename) const {
+  AssertThrow(fibers_ != nullptr, ExcMessage("Fibers not initialized."));
+
+  FE_SimplexDGP<dim> fe_scalar(0);
+  FESystem<dim> fe_vec(fe_scalar, 3);
+  DoFHandler<dim> dof_vec(mesh);
+  dof_vec.distribute_dofs(fe_vec);
+
+  const IndexSet locally_owned_vec = dof_vec.locally_owned_dofs();
+  IndexSet locally_relevant_vec;
+  DoFTools::extract_locally_relevant_dofs(dof_vec, locally_relevant_vec);
+
+  TrilinosWrappers::MPI::Vector f0_owned(locally_owned_vec, MPI_COMM_WORLD);
+  TrilinosWrappers::MPI::Vector s0_owned(locally_owned_vec, MPI_COMM_WORLD);
+  TrilinosWrappers::MPI::Vector n0_owned(locally_owned_vec, MPI_COMM_WORLD);
+
+  std::vector<types::global_dof_index> dofs(3);
+  auto cell_vec = dof_vec.begin_active();
+  for (const auto &cell : dof_handler.active_cell_iterators()) {
+    if (cell->is_locally_owned()) {
+      dealii::Tensor<1, 3> f0, s0, n0;
+      fibers_->frame_at(cell, 0, cell->center(), f0, s0, n0);
+      cell_vec->get_dof_indices(dofs);
+      for (unsigned int i = 0; i < 3; ++i) {
+        f0_owned[dofs[i]] = f0[i];
+        s0_owned[dofs[i]] = s0[i];
+        n0_owned[dofs[i]] = n0[i];
+      }
+    }
+    ++cell_vec;
+  }
+  f0_owned.compress(VectorOperation::insert);
+  s0_owned.compress(VectorOperation::insert);
+  n0_owned.compress(VectorOperation::insert);
+
+  TrilinosWrappers::MPI::Vector f0_v(locally_owned_vec, locally_relevant_vec, MPI_COMM_WORLD);
+  TrilinosWrappers::MPI::Vector s0_v(locally_owned_vec, locally_relevant_vec, MPI_COMM_WORLD);
+  TrilinosWrappers::MPI::Vector n0_v(locally_owned_vec, locally_relevant_vec, MPI_COMM_WORLD);
+  f0_v = f0_owned;
+  s0_v = s0_owned;
+  n0_v = n0_owned;
+
+  DataOut<dim> data_out;
+  data_out.attach_dof_handler(dof_vec);
+
+  const std::vector<DataComponentInterpretation::DataComponentInterpretation>
+    vi(3, DataComponentInterpretation::component_is_part_of_vector);
+
+  data_out.add_data_vector(f0_v, std::vector<std::string>(3, "f0"),
+                           DataOut<dim>::type_dof_data, vi);
+  data_out.add_data_vector(s0_v, std::vector<std::string>(3, "s0"),
+                           DataOut<dim>::type_dof_data, vi);
+  data_out.add_data_vector(n0_v, std::vector<std::string>(3, "n0"),
+                           DataOut<dim>::type_dof_data, vi);
+
+  std::vector<unsigned int> partition_int(mesh.n_active_cells());
+  GridTools::get_subdomain_association(mesh, partition_int);
+  const Vector<double> partitioning(partition_int.begin(), partition_int.end());
+  data_out.add_data_vector(partitioning, "partitioning");
+
+  data_out.build_patches();
+  data_out.write_vtu_with_pvtu_record("./", filename, 0, MPI_COMM_WORLD);
+}
+
 
 } // namespace cardiac

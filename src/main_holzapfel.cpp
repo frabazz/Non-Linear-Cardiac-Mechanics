@@ -67,9 +67,11 @@ int main(int argc, char *argv[]) {
                     nullptr,
                     params);
   model.setup();
-
+  
   model.set_fibers(compute_laplace_fibers(model));
 
-  model.solve();
+  model.output_fibers("fibers_ventricle_laplace_0_7");
+  
+  //model.solve();
   return 0;
 }
