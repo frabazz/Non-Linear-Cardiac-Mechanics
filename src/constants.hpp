@@ -26,13 +26,13 @@ constexpr double FIBER_ALPHA_EPI  = -60.0;
 namespace holzapfel {
   constexpr double FIBER_BETA_ENDO = -30.0;
   constexpr double FIBER_BETA_EPI  =  30.0;
-  constexpr double ALPHA_ROBIN     =  3.75;
+  constexpr double ALPHA_ROBIN     =  0.999918;
 
   constexpr unsigned int CONVERGENCE_STUDY_STEPS = 2;
   
   // pressure loading
   constexpr double P_START  = 0.1;
-  constexpr double P_END    = 0.2;
+  constexpr double P_END    = 15.0;
   constexpr int    N_STEPS  = 50;
 
   // linear solver
@@ -43,16 +43,16 @@ namespace holzapfel {
   constexpr double       AMG_AGG_THRESHOLD = 0.02;
   constexpr bool         AMG_CONST_MODES   = true;
 
-  // Holzapfel-Ogden 2009 material parameters [kPa]
-  constexpr double A     = 0.059;
-  constexpr double B     = 8.023;
-  constexpr double A_F   = 18.472;
-  constexpr double B_F   = 16.026;
-  constexpr double A_S   = 2.481;
-  constexpr double B_S   = 11.120;
-  constexpr double A_FS  = 0.216;
-  constexpr double B_FS  = 11.436;
-  constexpr double KAPPA = 500.0;
+  // Holzapfel-Ogden barbotta parameters
+  constexpr double A     = 0.2;
+  constexpr double B     = 4.610;
+  constexpr double A_F   = 4.1907;
+  constexpr double B_F   = 7.8565;
+  constexpr double A_S   = 2.5640;
+  constexpr double B_S   = 10.4460;
+  constexpr double A_FS  = 0.1304;
+  constexpr double B_FS  = 15.255;
+  constexpr double KAPPA = 5.0;
 }
 
 namespace guccione {
@@ -96,8 +96,8 @@ namespace NeoHooke {
 
   // pressure loading
   constexpr double P_START = 1.0;
-  constexpr double P_END   = 15.0;
-  constexpr int    N_STEPS = 100;
+  constexpr double P_END   = 3.0;
+  constexpr int    N_STEPS = 20;
 
   // linear solver
   constexpr unsigned int GMRES_MAX_ITER    = 15000;
