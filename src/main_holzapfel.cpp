@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
   }
 
   
-  const std::string mesh = "../ventricular_meshes/msh/ventricle_0_7.msh";
+  const std::string mesh = "../ventricular_meshes/msh/ventricle_0_3.msh";
 
 
   params.alpha_robin = cardiac::constants::holzapfel::ALPHA_ROBIN;
