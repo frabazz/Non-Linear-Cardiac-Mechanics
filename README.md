@@ -84,7 +84,7 @@ Parallel VTU output written to the working directory at each pressure step:
 - `output-<mesh_stem>_<step>.pvtu` — open in ParaView
 - Scalar field `solution_mag` = $|u|$ included alongside the displacement vector
 
-## Convergence study (Guccione only)
+## Convergence study
 
 ```cpp
 guccione::LV::run_convergence_study({"mesh_coarse.msh", "mesh_fine.msh"}, r, "convergence.csv");
