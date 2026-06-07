@@ -68,7 +68,7 @@ make
 This produces three executables: `cardiac_holzapfel`, `cardiac_guccione`, and `cardiac` (demo showing both models via the common `ISolver` interface).
 
 ## Run
-
+The number of MPI ranks can be adjusted based on the available hardware resources.
 ```bash
 cd build
 mpirun -n 4 ./cardiac_holzapfel
@@ -84,7 +84,7 @@ Parallel VTU output written to the working directory at each pressure step:
 - `output-<mesh_stem>_<step>.pvtu` — open in ParaView
 - Scalar field `solution_mag` = $|u|$ included alongside the displacement vector
 
-## Convergence study (Guccione only)
+## Convergence study
 
 ```cpp
 guccione::LV::run_convergence_study({"mesh_coarse.msh", "mesh_fine.msh"}, r, "convergence.csv");

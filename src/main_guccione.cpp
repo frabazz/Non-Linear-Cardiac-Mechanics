@@ -80,6 +80,9 @@ int main(int argc, char *argv[]) {
                     std::make_unique<cardiac::AnalyticalProlateFibers>(),
                     guccione_params());
   model.setup();
+
+  model.output_fibers("fibers_ventricle_prolate_0_7");
+  
   model.solve();
   return 0;
 }

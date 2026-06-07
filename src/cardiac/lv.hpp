@@ -57,7 +57,7 @@ public:
                                     int                             n_steps,
                                     const std::string              &csv_filename
                                       = "convergence.csv");
-
+  void output_fibers(const std::string &filename = "fibers") const;
 protected:
   std::unique_ptr<StrainEnergy> energy_;
   std::unique_ptr<FiberField>   fibers_;
