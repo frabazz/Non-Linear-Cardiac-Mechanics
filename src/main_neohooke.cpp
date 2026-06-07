@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  const std::string mesh = "../ventricular_meshes/msh/ventricle_0_99.msh";
+  const std::string mesh = "../ventricular_meshes/msh/ventricle_0_3.msh";
 
   cardiac::LV model(mesh, 2,
                     std::make_unique<cardiac::NeoHookeEnergy>(),

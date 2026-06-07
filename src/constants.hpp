@@ -33,7 +33,7 @@ namespace holzapfel {
   // pressure loading
   constexpr double P_START  = 0.1;
   constexpr double P_END    = 15.0;
-  constexpr int    N_STEPS  = 50;
+  constexpr int    N_STEPS  = 100;
 
   // linear solver
   constexpr unsigned int GMRES_MAX_ITER    = 20000;
@@ -75,7 +75,7 @@ namespace guccione {
   constexpr double       AMG_AGG_THRESHOLD = 1e-4;
   constexpr bool         AMG_CONST_MODES   = false;
 
-  // Guccione 1991 material parameters [kPa]
+  // Guccione material parameters
   constexpr double MU_HOOK = 4.0;
   constexpr double K_HOOK  = 50.0;
   constexpr double B_FF    = 8.0;
@@ -95,7 +95,7 @@ namespace NeoHooke {
   constexpr unsigned int CONVERGENCE_STUDY_STEPS = 25;
 
   // pressure loading
-  constexpr double P_START = 1.0;
+  constexpr double P_START = 0.0;
   constexpr double P_END   = 3.0;
   constexpr int    N_STEPS = 20;
 

@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     const std::vector<std::string> ventricle_meshes = {
       "../ventricular_meshes/msh/ventricle_0_99.msh",
       "../ventricular_meshes/msh/ventricle_0_7.msh"
-      //      "../ventricular_meshes/msh/ventricle_0_5.msh",
+            "../ventricular_meshes/msh/ventricle_0_5.msh",
       //"../ventricular_meshes/msh/ventricle_0_3.msh",
     };
     cardiac::LV::run_convergence_study(
