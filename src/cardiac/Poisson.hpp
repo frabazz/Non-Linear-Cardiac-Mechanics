@@ -76,11 +76,6 @@ public:
   void
   output() const;
 
-  // Compute the error against a given exact solution.
-  double
-  compute_error(const VectorTools::NormType &norm_type,
-                const Function<dim>         &exact_solution) const;
-
 protected:
 
   // Triangulation. The parallel::fullydistributed::Triangulation class manages

@@ -29,7 +29,7 @@ namespace holzapfel {
   constexpr double ALPHA_ROBIN     =  0.999918;
 
   constexpr unsigned int CONVERGENCE_STUDY_STEPS = 2;
-  
+
   // pressure loading
   constexpr double P_START  = 0.1;
   constexpr double P_END    = 15.0;
@@ -52,7 +52,7 @@ namespace holzapfel {
   constexpr double B_S   = 10.4460;
   constexpr double A_FS  = 0.1304;
   constexpr double B_FS  = 15.255;
-  constexpr double KAPPA = 5.0;
+  constexpr double KAPPA = 50.0;
 }
 
 namespace guccione {
@@ -112,6 +112,6 @@ namespace NeoHooke {
   constexpr double K_HOOK  = 50.0;
 
 }
-  
+
 } // namespace constants
 } // namespace cardiac
