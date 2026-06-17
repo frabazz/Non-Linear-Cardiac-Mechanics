@@ -63,6 +63,7 @@ public:
     bool   amg_extract_constant_modes = cardiac::constants::holzapfel::AMG_CONST_MODES;
 
     double alpha_robin = cardiac::constants::holzapfel::ALPHA_ROBIN;
+    double newton_tolerance = cardiac::constants::NEWTON_TOLERANCE;
   };
 
   class ForcingTerm : public Function<dim> {

@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
 
   const std::string model_name = (argc > 1) ? std::string(argv[1]) : "holzapfel";
   const std::string mesh       = (argc > 2) ? std::string(argv[2])
-                                             : "../ventricular_meshes/msh/ventricle_0_99.msh";
+                                             : "../ventricular_meshes/msh/ventricle_0_3.msh";
   const unsigned int degree = 2;
 
   if (model_name == "guccione") {

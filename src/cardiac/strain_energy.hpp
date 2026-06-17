@@ -95,6 +95,74 @@ private:
   double C_param = constants::guccione::C_PARAM;
 };
 
+class BeamEnergy : public StrainEnergy {
+public:
+  struct Params {
+    double mu_hook = constants::beam::MU_HOOK;
+    double k_hook  = constants::beam::K_HOOK;
+    double b_ff    = constants::beam::B_FF;
+    double b_ss    = constants::beam::B_SS;
+    double b_nn    = constants::beam::B_NN;
+    double b_fs    = constants::beam::B_FS;
+    double b_fn    = constants::beam::B_FN;
+    double b_sn    = constants::beam::B_SN;
+    double C_param = constants::beam::C_PARAM;
+  };
+
+  BeamEnergy() = default;
+  explicit BeamEnergy(const Params &p)
+  {
+    mu_hook = p.mu_hook; k_hook  = p.k_hook;
+    b_ff    = p.b_ff;    b_ss    = p.b_ss;    b_nn    = p.b_nn;
+    b_fs    = p.b_fs;    b_fn    = p.b_fn;    b_sn    = p.b_sn;
+    C_param = p.C_param;
+  }
+
+  ADNumberType compute_W(const dealii::Tensor<2, 3, ADNumberType> &F,
+                         const dealii::Tensor<1, 3>               &f,
+                         const dealii::Tensor<1, 3>               &s,
+                         const dealii::Tensor<1, 3>               &n) const override
+  {
+    constexpr unsigned int dim = 3;
+    using ADTensor2 = dealii::Tensor<2, dim, ADNumberType>;
+
+    const ADNumberType J_ad = determinant(F);
+    const ADTensor2    C_ad = transpose(F) * F;
+
+    ADTensor2 I;
+    for (unsigned int i = 0; i < dim; ++i) I[i][i] = 1.0;
+    const ADTensor2 E_ad = 0.5 * (C_ad - I);
+
+    const ADNumberType E_ff = scalar_product(f, E_ad * f);
+    const ADNumberType E_ss = scalar_product(s, E_ad * s);
+    const ADNumberType E_nn = scalar_product(n, E_ad * n);
+    const ADNumberType E_fs = scalar_product(f, E_ad * s);
+    const ADNumberType E_fn = scalar_product(f, E_ad * n);
+    const ADNumberType E_sn = scalar_product(s, E_ad * n);
+
+    const ADNumberType Q =
+    b_ff  * E_ff * E_ff                    
+  + b_sn  * (E_ss*E_ss + E_nn*E_nn + 2.0*E_sn*E_sn)  
+  + b_fs * 2.0*(E_fs*E_fs + E_fn*E_fn);
+
+    ADNumberType psi_ad = (C_param / 2.0) * (exp(Q) - 1.0);
+    psi_ad += (k_hook / 2.0) * pow(J_ad - 1.0, 2.0);
+    return psi_ad;
+  }
+
+private:
+  double mu_hook = constants::beam::MU_HOOK;
+  double k_hook  = constants::beam::K_HOOK;
+  double b_ff    = constants::beam::B_FF;
+  double b_ss    = constants::beam::B_SS;
+  double b_nn    = constants::beam::B_NN;
+  double b_fs    = constants::beam::B_FS;
+  double b_fn    = constants::beam::B_FN;
+  double b_sn    = constants::beam::B_SN;
+  double C_param = constants::beam::C_PARAM;
+};
+
+
 class NeoHookeEnergy : public StrainEnergy {
 public:
   struct Params {

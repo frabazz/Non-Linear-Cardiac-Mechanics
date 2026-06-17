@@ -33,11 +33,12 @@ namespace holzapfel {
   // pressure loading
   constexpr double P_START  = 0.1;
   constexpr double P_END    = 15.0;
-  constexpr int    N_STEPS  = 100;
+  constexpr int    N_STEPS  = 50;
 
   // linear solver
-  constexpr unsigned int GMRES_MAX_ITER    = 20000;
-  constexpr double       GMRES_TOL_FACTOR  = 1.0e-4;
+  constexpr unsigned int GMRES_MAX_ITER    = 15000;
+  constexpr double       GMRES_TOL_FACTOR  = 1.5e-4;
+
   constexpr unsigned int GMRES_RESTART     = 100;
   constexpr bool         AMG_ELLIPTIC      = true;
   constexpr double       AMG_AGG_THRESHOLD = 0.02;
@@ -52,7 +53,7 @@ namespace holzapfel {
   constexpr double B_S   = 10.4460;
   constexpr double A_FS  = 0.1304;
   constexpr double B_FS  = 15.255;
-  constexpr double KAPPA = 5.0;
+  constexpr double KAPPA = 30.0;
 }
 
 namespace guccione {
@@ -112,6 +113,44 @@ namespace NeoHooke {
   constexpr double K_HOOK  = 50.0;
 
 }
+
+namespace beam {
+  constexpr double       ALPHA_ROBIN             = 0.999918;
+  constexpr double       PROLATE_D               = 2.91;
+  constexpr double       PROLATE_XI_ENDO         = 0.6;
+  constexpr double       PROLATE_XI_EPI          = 1.02;
+  constexpr unsigned int CONVERGENCE_STUDY_STEPS = 25;
+
+  // pressure loading
+  constexpr double P_START = 0.0004;
+  constexpr double P_END   = 0.004;
+  constexpr int    N_STEPS = 30;
+
+  // linear solver
+  constexpr unsigned int GMRES_MAX_ITER    = 15000;
+  constexpr double       GMRES_TOL_FACTOR  = 0.1;
+  constexpr unsigned int GMRES_RESTART     = 30;
+  constexpr bool         AMG_ELLIPTIC      = true;
+  constexpr double       AMG_AGG_THRESHOLD = 1e-4;
+  constexpr bool         AMG_CONST_MODES   = false;
+
+  // Guccione material parameters
+  constexpr double MU_HOOK = 4.0;
+  constexpr double K_HOOK  = 30.0;
+
+  constexpr double B_FF    = 8.0;
+  constexpr double B_SS    = 2.0;
+  constexpr double B_NN    = 2.0;
   
+  constexpr double B_FS    = 4.0;
+  constexpr double B_FN    = 4.0;
+  constexpr double B_SN    = 2.0;
+  constexpr double C_PARAM = 2.0;
+
+  constexpr double       NEWTON_TOLERANCE = 1.0e-3;
+}
+
+
 } // namespace constants
 } // namespace cardiac
+

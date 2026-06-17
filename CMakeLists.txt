@@ -53,7 +53,7 @@ deal_ii_setup_target(CardiacTensorUtils)
 add_library(CardiacLV STATIC src/cardiac/lv.cpp)
 deal_ii_setup_target(CardiacLV)
 
-set(MODELS guccione holzapfel)
+set(MODELS guccione holzapfel beam)
 
 foreach(MODEL ${MODELS})
 

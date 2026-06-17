@@ -240,7 +240,7 @@ LVBase::line_search(const TrilinosWrappers::MPI::Vector &solution_prev,
 void LVBase::solve_newton() {
   namespace cc = cardiac::constants;
   const unsigned int n_max_iters       = cc::NEWTON_MAX_ITER;
-  const double       residual_tolerance = cc::NEWTON_TOLERANCE;
+  const double       residual_tolerance = params.newton_tolerance;
 
   unsigned int n_iter       = 0;
   double       residual_norm = residual_tolerance + 1;

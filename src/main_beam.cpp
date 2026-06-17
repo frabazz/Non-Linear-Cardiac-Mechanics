@@ -1,10 +1,29 @@
 #include "cardiac/lv.hpp"
 #include "cardiac/strain_energy.hpp"
 #include "cardiac/fiber_field.hpp"
-#include "cardiac/Poisson.hpp"
 #include "constants.hpp"
+#include "cardiac/Poisson.hpp"
+#include <iostream>
+#include <string>
+#include <vector>
 
-#include <deal.II/dofs/dof_tools.h>
+static LVBase::SolverParams beam_params()
+{
+  namespace ccg = cardiac::constants::beam;
+  LVBase::SolverParams p;
+  p.p_start                    = ccg::P_START;
+  p.p_end                      = ccg::P_END;
+  p.n_steps                    = ccg::N_STEPS;
+  p.gmres_max_iter             = ccg::GMRES_MAX_ITER;
+  p.gmres_tol_factor           = ccg::GMRES_TOL_FACTOR;
+  p.gmres_restart              = ccg::GMRES_RESTART;
+  p.amg_elliptic               = ccg::AMG_ELLIPTIC;
+  p.amg_aggregation_threshold  = ccg::AMG_AGG_THRESHOLD;
+  p.amg_extract_constant_modes = ccg::AMG_CONST_MODES;
+  p.alpha_robin                = ccg::ALPHA_ROBIN;
+  p.newton_tolerance           = ccg::NEWTON_TOLERANCE;
+  return p;
+}
 
 std::unique_ptr<cardiac::LaplaceFibers> compute_laplace_fibers(cardiac::LV& model){
     DoFHandler<3> dof_handler_poisson;
@@ -34,44 +53,33 @@ std::unique_ptr<cardiac::LaplaceFibers> compute_laplace_fibers(cardiac::LV& mode
 
 int main(int argc, char *argv[]) {
   dealii::Utilities::MPI::MPI_InitFinalize mpi_initialization(argc, argv, 1);
-    LVBase::SolverParams params;
-  
-    if (argc > 1 && std::string(argv[1]) == "--convergence") {
+
+  if (argc > 1 && std::string(argv[1]) == "--convergence") {
     const std::vector<std::string> ventricle_meshes = {
-      "../ventricular_meshes/msh/ventricle_0_99.msh",
-      "../ventricular_meshes/msh/ventricle_0_7.msh"
-            "../ventricular_meshes/msh/ventricle_0_5.msh",
-      //"../ventricular_meshes/msh/ventricle_0_3.msh",
+      "../mesh/beam_01.msh",
+      "../mesh/beam_02.msh",
+      "../mesh/beam_05.msh",
     };
     cardiac::LV::run_convergence_study(
-        ventricle_meshes, 2,
-        [](cardiac::LV& model) {     
+        ventricle_meshes, 2, 
+        [](cardiac::LV&) {     
           return std::make_pair(
-              std::make_unique<cardiac::HolzapfelOgdenEnergy>(),
-              compute_laplace_fibers(model));
+              std::make_unique<cardiac::BeamEnergy>(),
+              std::make_unique<cardiac::TrivialFibers>());
         },
-        params,
-        cardiac::constants::holzapfel::CONVERGENCE_STUDY_STEPS,
+        beam_params(),
+        cardiac::constants::beam::CONVERGENCE_STUDY_STEPS,
         "convergence_ventricle.csv");
     return 0;
   }
 
-  
-  const std::string mesh = "../ventricular_meshes/msh/ventricle_0_3.msh";
-
-
-  params.alpha_robin = cardiac::constants::holzapfel::ALPHA_ROBIN;
+  const std::string mesh = "../mesh/beam_05.msh";
 
   cardiac::LV model(mesh, 2,
-                    std::make_unique<cardiac::HolzapfelOgdenEnergy>(),
-                    nullptr,
-                    params);
+                    std::make_unique<cardiac::BeamEnergy>(),
+                    std::make_unique<cardiac::TrivialFibers>(),
+                    beam_params());
   model.setup();
-  
-  model.set_fibers(compute_laplace_fibers(model));
-
-  model.output_fibers("fibers_ventricle_laplace_0_7");
-  
   model.solve();
   return 0;
 }
