@@ -195,17 +195,17 @@ evaluate_scalar_field(
 
       const double alpha_endo = 60.0  * M_PI / 180.0; 
       const double alpha_epi  = -60.0 * M_PI / 180.0;
-      const double beta_endo  = -30.0 * M_PI / 180.0; 
-      const double beta_epi   = 30.0  * M_PI / 180.0;
+      //const double beta_endo  = -30.0 * M_PI / 180.0; 
+      //const double beta_epi   = 30.0  * M_PI / 180.0;
 
       const double alpha = alpha_endo * (1.0 - lambda) + alpha_epi * lambda;
-      const double beta  = beta_endo  * (1.0 - lambda) + beta_epi  * lambda;
+      //      const double beta  = beta_endo  * (1.0 - lambda) + beta_epi  * lambda;
 
       Tensor<1, dim> f0    = std::cos(alpha) * e0 + std::sin(alpha) * e1;
-      Tensor<1, dim> g_hat = -std::sin(alpha) * e0 + std::cos(alpha) * e1;
+      //Tensor<1, dim> g_hat = -std::sin(alpha) * e0 + std::cos(alpha) * e1;
 
-      Tensor<1, dim> s0 = std::cos(beta) * g_hat + std::sin(beta) * e2;
-      Tensor<1, dim> n0 = -std::sin(beta) * g_hat + std::cos(beta) * e2;
+      //      Tensor<1, dim> s0 = std::cos(beta) * g_hat + std::sin(beta) * e2;
+      //Tensor<1, dim> n0 = -std::sin(beta) * g_hat + std::cos(beta) * e2;
 
       for (unsigned int d = 0; d < dim; ++d)
         computed_quantities[p](d) = f0[d]; 
@@ -261,29 +261,4 @@ evaluate_scalar_field(
   pcout << "Output written to " << output_file_name << std::endl;
 
   pcout << "===============================================" << std::endl;
-}
-
-double
-Poisson::compute_error(
-  const VectorTools::NormType &norm_type,
-  const Function<dim>         &exact_solution) const
-{
-//   const QGaussSimplex<dim> quadrature_error(r + 2);
-
-//   FE_SimplexP<dim> fe_linear(1);
-//   MappingFE        mapping(fe_linear);
-
-//   Vector<double> error_per_cell(mesh.n_active_cells());
-//   VectorTools::integrate_difference(mapping,
-//                                     dof_handler,
-//                                     solution,
-//                                     exact_solution,
-//                                     error_per_cell,
-//                                     quadrature_error,
-//                                     norm_type);
-
-//   const double error =
-//     VectorTools::compute_global_error(mesh, error_per_cell, norm_type);
-
-//   return error;
 }

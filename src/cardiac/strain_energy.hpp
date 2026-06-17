@@ -226,7 +226,8 @@ public:
     const ADNumberType J_ad  = determinant(F);
     const ADTensor2    C_ad  = transpose(F) * F;
     const ADNumberType I1_ad = trace(C_ad);
-
+    const ADNumberType I1bar_ad  = std::pow(J_ad, -2.0 / 3.0) * I1_ad;
+    
     ADNumberType I4f_ad  = 0.0;
     ADNumberType I4s_ad  = 0.0;
     ADNumberType I8fs_ad = 0.0;
@@ -237,15 +238,21 @@ public:
         I8fs_ad += f0[i] * C_ad[i][j] * s0[j];
       }
 
-    ADNumberType psi_ad = (a / (2.0 * b)) * (std::exp(b * (I1_ad - 3.0)) - 1.0);
+    //W_1
+    ADNumberType psi_ad = (a / (2.0 * b)) * (std::exp(b * (I1bar_ad - 3.0)) - 1.0);
 
+    //W_4f
     if (I4f_ad > 1.0)
       psi_ad += (a_f / (2.0 * b_f)) * (std::exp(b_f * std::pow(I4f_ad - 1.0, 2.0)) - 1.0);
+    //W_4s
     if (I4s_ad > 1.0)
       psi_ad += (a_s / (2.0 * b_s)) * (std::exp(b_s * std::pow(I4s_ad - 1.0, 2.0)) - 1.0);
 
+    //W_8fs
     psi_ad += (a_fs / (2.0 * b_fs)) * (std::exp(b_fs * std::pow(I8fs_ad, 2.0)) - 1.0);
-    psi_ad += (kappa / 2.0) * std::pow(J_ad - 1.0, 2.0);
+
+    //penalty
+    psi_ad += (kappa / 4.0) * (J_ad*J_ad - 1.0 - 2.0 * std::log(J_ad));
 
     return psi_ad;
   }
