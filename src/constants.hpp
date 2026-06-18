@@ -31,7 +31,7 @@ namespace holzapfel {
   constexpr unsigned int CONVERGENCE_STUDY_STEPS = 2;
 
   // pressure loading
-  constexpr double P_START  = 0.1;
+  constexpr double P_START  = 0.0;
   constexpr double P_END    = 15.0;
   constexpr int    N_STEPS  = 50;
 
@@ -64,7 +64,7 @@ namespace guccione {
   constexpr unsigned int CONVERGENCE_STUDY_STEPS = 25;
 
   // pressure loading
-  constexpr double P_START = 1.0;
+  constexpr double P_START = 0.0;
   constexpr double P_END   = 15.0;
   constexpr int    N_STEPS = 100;
 
@@ -77,6 +77,7 @@ namespace guccione {
   constexpr bool         AMG_CONST_MODES   = false;
 
   // Guccione material parameters
+  //mu_hook was part of another formulation, now is  not used
   constexpr double MU_HOOK = 4.0;
   constexpr double K_HOOK  = 50.0;
   constexpr double B_FF    = 8.0;
@@ -135,7 +136,8 @@ namespace beam {
   constexpr bool         AMG_CONST_MODES   = false;
 
   // Guccione material parameters
-  constexpr double MU_HOOK = 4.0;
+  //mu_hook was part of another formulation, now is  not used
+  constexpr double MU_HOOK = 4.0; 
   constexpr double K_HOOK  = 30.0;
 
   constexpr double B_FF    = 8.0;
