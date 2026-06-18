@@ -77,6 +77,8 @@ namespace guccione {
   constexpr bool         AMG_CONST_MODES   = false;
 
   // Guccione material parameters
+  //mu_hook was part of another formulation, now is  not used
+  constexpr double MU_HOOK = 4.0;
   constexpr double K_HOOK  = 50.0;
   constexpr double B_FF    = 8.0;
   constexpr double B_SS    = 2.0;
@@ -134,6 +136,8 @@ namespace beam {
   constexpr bool         AMG_CONST_MODES   = false;
 
   // Guccione material parameters
+  //mu_hook was part of another formulation, now is  not used
+  constexpr double MU_HOOK = 4.0; 
   constexpr double K_HOOK  = 30.0;
 
   constexpr double B_FF    = 8.0;
