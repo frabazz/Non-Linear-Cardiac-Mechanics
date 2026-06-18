@@ -38,10 +38,10 @@ int main(int argc, char *argv[]) {
   
     if (argc > 1 && std::string(argv[1]) == "--convergence") {
     const std::vector<std::string> ventricle_meshes = {
-      "../ventricular_meshes/msh/ventricle_0_99.msh",
-      "../ventricular_meshes/msh/ventricle_0_7.msh"
-            "../ventricular_meshes/msh/ventricle_0_5.msh",
-      //"../ventricular_meshes/msh/ventricle_0_3.msh",
+      "../mesh/ventricular_meshes/ventricle_0_99.msh",
+      "../mesh/ventricular_meshes/ventricle_0_7.msh"
+            "../mesh/ventricular_meshes/ventricle_0_5.msh",
+      //"../mesh/ventricular_meshes/ventricle_0_3.msh",
     };
     cardiac::LV::run_convergence_study(
         ventricle_meshes, 2,
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
   }
 
   
-  const std::string mesh = "../ventricular_meshes/msh/ventricle_0_3.msh";
+  const std::string mesh = "../mesh/ventricular_meshes/ventricle_0_3.msh";
 
 
   params.alpha_robin = cardiac::constants::holzapfel::ALPHA_ROBIN;

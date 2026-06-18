@@ -56,9 +56,9 @@ int main(int argc, char *argv[]) {
 
   if (argc > 1 && std::string(argv[1]) == "--convergence") {
     const std::vector<std::string> ventricle_meshes = {
-      "../mesh/beam_01.msh",
-      "../mesh/beam_02.msh",
-      "../mesh/beam_05.msh",
+      "../mesh/beam/beam_01.msh",
+      "../mesh/beam/beam_02.msh",
+      "../mesh/beam/beam_05.msh",
     };
     cardiac::LV::run_convergence_study(
         ventricle_meshes, 2, 
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  const std::string mesh = "../mesh/beam_05.msh";
+  const std::string mesh = "../mesh/beam/beam_05.msh";
 
   cardiac::LV model(mesh, 2,
                     std::make_unique<cardiac::BeamEnergy>(),
