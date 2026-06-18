@@ -53,7 +53,7 @@ namespace holzapfel {
   constexpr double B_S   = 10.4460;
   constexpr double A_FS  = 0.1304;
   constexpr double B_FS  = 15.255;
-  constexpr double KAPPA = 30.0;
+  constexpr double KAPPA = 50.0;
 }
 
 namespace guccione {

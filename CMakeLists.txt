@@ -15,6 +15,14 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   add_definitions(-DBUILD_TYPE_DEBUG)
 endif()
 
+#convert meshes
+execute_process(
+  COMMAND bash "${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate_meshes.sh"
+  RESULT_VARIABLE MESH_GEN_RESULT)
+if(NOT MESH_GEN_RESULT EQUAL 0)
+  message(WARNING "Mesh generation failed. Run it manually with: bash scripts/generate_meshes.sh")
+endif()
+
 # Locate MPI compiler.
 find_package(MPI REQUIRED)
 set(CMAKE_CXX_COMPILER "${MPI_CXX_COMPILER}")
