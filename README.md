@@ -2,44 +2,20 @@
 
 Parallel finite-element solver for nonlinear cardiac mechanics, implemented with deal.II, MPI, and Trilinos.
 
-The code solves a nonlinear equilibrium problem for a 3D left-ventricular geometry under internal pressure loading, using a Newton–Raphson method with backtracking line search. Two hyperelastic material models are provided.
+The code solves a nonlinear equilibrium problem for a 3D left-ventricular geometry under internal pressure loading, using a Newton-Raphson method with backtracking line search.
 
 ## Material models
 
-### Holzapfel-Ogden (2009)
-Anisotropic model with fiber (`f0`), sheet (`s0`), and normal (`n0`) directions. Fiber directions are computed by solving a Laplace problem (transmural coordinate λ) and applying Gram-Schmidt orthogonalization. The strain energy is:
+Three hyperelastic material models are available, sharing the same Newton solver (`LVBase`) and differing only in the strain energy function and in how fiber directions are computed:
 
-$$W = \frac{a}{2b} \left(e^{b(I_1-3)}-1\right) + \sum_{i \in \{f,s\}} \frac{a_i}{2b_i}\left(e^{b_i(I_{4i}-1)^2}-1\right) + \frac{a_{fs}}{2b_{fs}}\left(e^{b_{fs} I_{8fs}^2}-1\right) + \frac{\kappa}{2}(J-1)^2$$
+- **Holzapfel-Ogden** — anisotropic model with fiber, sheet and normal directions. Fiber directions are obtained by solving a Laplace problem for the transmural coordinate and applying Gram-Schmidt orthogonalization.
+- **Guccione** — transversely isotropic model. Fiber directions are computed analytically from prolate spheroidal coordinates.
+- **Neo-Hooke** — isotropic model, mainly used as a simpler reference case.
 
-### Guccione (1991)
-Transversely isotropic model. Fiber directions are computed analytically from prolate spheroidal coordinates. The strain energy is:
+In addition, `cardiac_beam` runs the Guccione-type energy (same form, own set of parameters in `constants::beam`) on a simple 3D beam geometry instead of the ventricle, and is used for validation and convergence checks.
 
-$$W = \frac{C}{2}\left(e^Q - 1\right) + \frac{\kappa}{2}(J-1)^2, \quad Q = b_{ff}E_{ff}^2 + b_{ss}E_{ss}^2 + \cdots$$
+All material and solver constants (material parameters, pressure range, Newton/GMRES settings, boundary IDs, fiber angles) are centralized in `src/constants.hpp`, one namespace per model.
 
-## Code structure
-
-```
-src/
-├── constants.hpp               # all model and solver constants
-├── cardiac_solver.hpp          # ISolver interface
-├── material_model.hpp          # IMaterialModel interface
-├── lv_base.hpp / lv_base.cpp   # shared Newton solver, assembly, output
-├── common.hpp
-├── system_assembler.*
-├── holzapfel/
-│   ├── left_ventricle.hpp/cpp  # Holzapfel LV: Poisson solve + compute_rhs
-│   ├── tensor_utils.hpp/cpp    # Holzapfel-Ogden W(F) via AD
-│   ├── Poisson.hpp/cpp         # transmural coordinate λ
-│   └── main.cpp
-└── guccione/
-    ├── left_ventricle.hpp/cpp  # Guccione LV: compute_rhs + convergence study
-    ├── tensor_utils.hpp/cpp    # Guccione W(F) via AD + prolate coords
-    └── main.cpp
-```
-
-`LVBase` provides `setup()`, `assemble_system()`, `solve_linear_system()`, `line_search()`, `solve_newton()`, `solve_loop()`, and `output()`. Each model only implements `compute_rhs()`.
-
-All numerical and physical constants (material parameters, pressure ranges, solver settings, boundary IDs, fiber angles, geometry) are centralized in `src/constants.hpp` under `cardiac::constants::holzapfel` and `cardiac::constants::guccione`.
 
 ## Boundary IDs
 
@@ -49,13 +25,26 @@ All numerical and physical constants (material parameters, pressure ranges, solv
 | 3  | Neumann — follower pressure (endocardium) |
 | 4  | Robin — epicardial spring |
 
-## Build requirements
+## Dependencies
 
 - C++17 compiler
 - MPI
-- deal.II ≥ 9.3.1 (with Trilinos enabled)
-- Boost ≥ 1.72 (filesystem, iostreams, serialization)
-- Sacado (from Trilinos)
+- deal.II >= 9.3.1, built with Trilinos support
+- Trilinos (Sacado, used for automatic differentiation of the strain energy)
+- Boost >= 1.72 (filesystem, iostreams, serialization)
+- gmsh
+
+## Mesh generation
+
+The ventricular and beam geometries are stored as `.geo` files under `geometry/` and need to be converted to deal.II-compatible `.msh` files before building. This conversion is triggered automatically by CMake: running `cmake ..` calls `scripts/generate_meshes.sh`, which uses gmsh to generate the meshes into `mesh/ventricular_meshes/` and `mesh/beam/`.
+
+If this step fails, for example because gmsh is not installed or not in `PATH` at configure time, CMake only prints a warning and continues. In that case install gmsh and run the script manually before building:
+
+```bash
+bash scripts/generate_meshes.sh
+```
+
+The script skips meshes that are already up to date with respect to their `.geo` file, so it can be re-run safely at any time.
 
 ## Build
 
@@ -65,29 +54,32 @@ cmake ..
 make
 ```
 
-This produces three executables: `cardiac_holzapfel`, `cardiac_guccione`, and `cardiac` (demo showing both models via the common `ISolver` interface).
+This produces four executables, one per material model: `cardiac_holzapfel`, `cardiac_guccione`, `cardiac_neohooke`, `cardiac_beam`.
 
 ## Run
+
 The number of MPI ranks can be adjusted based on the available hardware resources.
+
 ```bash
 cd build
 mpirun -n 4 ./cardiac_holzapfel
 mpirun -n 4 ./cardiac_guccione
+mpirun -n 4 ./cardiac_neohooke
+mpirun -n 4 ./cardiac_beam
 ```
 
-The mesh path is set in the respective `main.cpp`.
+Each executable also accepts a `--convergence` flag, which runs a self-convergence study on a sequence of meshes of decreasing size instead of the normal simulation, and writes the results to a CSV file:
+
+```bash
+mpirun -n 4 ./cardiac_guccione --convergence
+```
+
+The mesh paths used in both modes are set directly in the corresponding `src/main_*.cpp` file.
 
 ## Output
 
-Parallel VTU output written to the working directory at each pressure step:
+Parallel VTU output is written to the working directory at each pressure step:
 
-- `output-<mesh_stem>_<step>.pvtu` — open in ParaView
-- Scalar field `solution_mag` = $|u|$ included alongside the displacement vector
+- `output-<mesh_stem>_<step>.pvtu`, to be opened in ParaView
+- a scalar field with the displacement magnitude, alongside the displacement vector
 
-## Convergence study
-
-```cpp
-guccione::LV::run_convergence_study({"mesh_coarse.msh", "mesh_fine.msh"}, r, "convergence.csv");
-```
-
-Runs on all meshes, gathers solutions to rank 0, and computes self-convergence rates in L2 and H1.
