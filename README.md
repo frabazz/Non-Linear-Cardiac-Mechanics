@@ -36,9 +36,9 @@ All material and solver constants (material parameters, pressure range, Newton/G
 
 ## Mesh generation
 
-The ventricular and beam geometries are stored as `.geo` files under `geometry/` and need to be converted to deal.II-compatible `.msh` files before building. This conversion is triggered automatically by CMake: running `cmake ..` calls `scripts/generate_meshes.sh`, which uses gmsh to generate the meshes into `mesh/ventricular_meshes/` and `mesh/beam/`.
+The ventricular and beam geometries are stored as `.geo` files under `geometry/` and need to be converted to deal.II-compatible `.msh` files before running. This conversion is triggered automatically by CMake: running `cmake ..` calls `scripts/generate_meshes.sh`, which uses gmsh to generate the meshes into `mesh/ventricular_meshes/` and `mesh/beam/`.
 
-If this step fails, for example because gmsh is not installed or not in `PATH` at configure time, CMake only prints a warning and continues. In that case install gmsh and run the script manually before building:
+If this step fails, for example because gmsh is not installed or not in `PATH` at configure time, CMake only prints a warning and continues. In that case install gmsh and run the script manually before running:
 
 ```bash
 bash scripts/generate_meshes.sh
