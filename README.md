@@ -81,5 +81,3 @@ The mesh paths used in both modes are set directly in the corresponding `src/mai
 Parallel VTU output is written to the working directory at each pressure step:
 
 - `output-<mesh_stem>_<step>.pvtu`, to be opened in ParaView
-- a scalar field with the displacement magnitude, alongside the displacement vector
-
