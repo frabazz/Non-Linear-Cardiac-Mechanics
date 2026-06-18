@@ -33,7 +33,7 @@ namespace holzapfel {
   // pressure loading
   constexpr double P_START  = 0.0;
   constexpr double P_END    = 15.0;
-  constexpr int    N_STEPS  = 50;
+  constexpr int    N_STEPS  = 100;
 
   // linear solver
   constexpr unsigned int GMRES_MAX_ITER    = 15000;
@@ -44,7 +44,7 @@ namespace holzapfel {
   constexpr double       AMG_AGG_THRESHOLD = 0.02;
   constexpr bool         AMG_CONST_MODES   = true;
 
-  // Holzapfel-Ogden barbotta parameters
+  // Holzapfel-Ogden barbarotta parameters
   constexpr double A     = 0.2;
   constexpr double B     = 4.610;
   constexpr double A_F   = 4.1907;
