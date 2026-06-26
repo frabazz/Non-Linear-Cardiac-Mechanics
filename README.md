@@ -4,6 +4,8 @@ Parallel finite-element solver for nonlinear cardiac mechanics, implemented with
 
 The code solves a nonlinear equilibrium problem for a 3D left-ventricular geometry under internal pressure loading, using a Newton-Raphson method with backtracking line search.
 
+A detailed description of the mathematical formulation, finite-element implementation, constitutive models, and numerical methodology, and validation studies is available in `docs/Report.pdf`.
+
 ## Material models
 
 Three hyperelastic material models are available, sharing the same Newton solver (`LVBase`) and differing only in the strain energy function and in how fiber directions are computed:
